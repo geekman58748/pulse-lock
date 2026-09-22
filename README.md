@@ -12,7 +12,9 @@ Solami is the entire data path: **Blur** (decoded market events) feeds breadth,
 
 - [x] Day 1 — Blur WS ingestion (all event types → JSONL log), gRPC slots stream,
       conviction score engine with visible breakdown, console dashboard, slot-replay test
-- [ ] Day 2 — web dashboard (dark, from `mockup/`), Discord/Telegram alerts
+- [x] Day 2 — web dashboard (dark, from `mockup/`), Discord/Telegram alerts,
+      live mainnet verified: firehose + gRPC + replay test PASS (31 missed slots
+      recovered), alert chain firing with 35–431ms latency stamps
 - [ ] Day 3 — reconnect demo hardening, README polish, public repo + Loom
 
 ## Run (< 5 min)

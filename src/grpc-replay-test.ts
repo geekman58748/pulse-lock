@@ -60,7 +60,7 @@ async function main(): Promise<void> {
   console.log('')
   console.log('── SLOT REPLAY REPORT ──────────────────────────────')
   console.log(`   reconnects:        ${s.reconnects}`)
-  console.log(`   fromSlot used:     ${s.replayFrom ?? '(none)'}`)
+  console.log(`   fromSlot used:     ${s.lastReplayFrom ?? '(none)'}`)
   console.log(`   recovered updates: ${s.replayed}`)
   console.log(`   resumed at slot:   ${s.lastSlot} (was ${before} before drop)`)
   console.log('────────────────────────────────────────────────────')

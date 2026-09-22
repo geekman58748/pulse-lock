@@ -29,7 +29,10 @@ export interface GrpcStats {
   lastSlot: number
   slotUpdates: number
   txUpdates: number
+  /** current replay window start (null once caught up) */
   replayFrom: number | null
+  /** last replay window used — survives catch-up, for the demo report */
+  lastReplayFrom: number | null
   replayed: number
   givingUp: boolean
   /** server keepalive round-trips completed (stream health) */
@@ -79,6 +82,7 @@ export function startGrpc(opts: GrpcOpts): GrpcHandle {
     slotUpdates: 0,
     txUpdates: 0,
     replayFrom: null,
+    lastReplayFrom: null,
     replayed: 0,
     givingUp: false,
     pongs: 0,
@@ -164,6 +168,7 @@ export function startGrpc(opts: GrpcOpts): GrpcHandle {
       dropBase = st.lastSlot
       replayFrom = st.lastSlot + 1
       st.replayFrom = replayFrom
+      st.lastReplayFrom = replayFrom
     }
     const delay = Math.min(5000, 300 * 2 ** Math.min(4, st.reconnects))
     console.warn(`[grpc] stream down — reconnect + fromSlot=${replayFrom ?? 'head'} in ${delay}ms`)
