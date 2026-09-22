@@ -12,6 +12,18 @@
 <style>
 /* ── PulseLock-specific layer on Nova tokens ─────────────────────── */
 .frame-wrap{overflow-y:auto;}
+
+/* ── bottom-up orange gradient — tuned & balanced against the landing ──
+   pure black at top → soft Trenox-orange horizon rising from the bottom.
+   Aurora spans re-anchored to the bottom edge so the glow source sits low. */
+.aurora{background:
+  radial-gradient(130% 52% at 50% 118%, rgba(255,100,13,.26) 0%, rgba(255,100,13,.10) 38%, rgba(255,100,13,0) 62%),
+  linear-gradient(to top, rgba(255,100,13,.14) 0%, rgba(255,100,13,.045) 18%, transparent 38%);
+}
+.aurora span{opacity:.30;filter:blur(110px);}
+.aurora span:nth-child(1){top:auto;bottom:-150px;left:-90px;background:#7A3410;}
+.aurora span:nth-child(2){top:auto;bottom:-130px;right:-130px;background:#5C1F05;}
+.aurora span:nth-child(3){top:auto;bottom:-170px;left:34%;background:#8A3C12;}
 .content{padding:24px 28px 40px;}
 .view.hidden{display:none;}
 
