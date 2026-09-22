@@ -1,20 +1,19 @@
 /* ============================================================
-   NOVA — tokens.css
-   Design tokens (variables CSS) shared by ALL pages.
-   Dark mode :root + Light mode html.light override.
+   PulseLock tokens (Nova structure) — dark + Trenox orange
+   Accent matches landing: --primary #ff640d on black.
    ============================================================ */
 
 :root{
-  --bg:#0B0E14;
-  --blob-1:#22315c; --blob-2:#3d2255; --blob-3:#1c3b3a;
+  --bg:#0A0A0B;
+  --blob-1:#7A3410; --blob-2:#5C1F05; --blob-3:#40300F;
   --surface:rgba(255,255,255,0.045);
-  --surface-solid:#12151f;
-  --surface-2:#171b28;
+  --surface-solid:#141416;
+  --surface-2:#1A1A1D;
   --surface-hover:rgba(255,255,255,0.07);
   --border:rgba(255,255,255,0.08);
   --border-strong:rgba(255,255,255,0.16);
-  --text:#F5F7FB; --text-muted:#8B93A7; --text-faint:#565F73;
-  --mint:#6EE7B7; --violet:#A78BFA; --red:#FB7185; --amber:#FBBF6B;
+  --text:#F7F5F4; --text-muted:#98928C; --text-faint:#5E5852;
+  --mint:#FF640D; --violet:#FF8C45; --red:#FB7185; --amber:#FBBF6B;
   --shadow:0 20px 50px -12px rgba(0,0,0,0.5);
   --radius-lg:20px; --radius-md:14px; --radius-sm:10px;
   --font-display:'Space Grotesk',sans-serif;
@@ -22,14 +21,14 @@
   --font-mono:'JetBrains Mono',monospace;
 }
 html.light{
-  --bg:#EEF1F7;
-  --blob-1:#c9dcfb; --blob-2:#f0d9fb; --blob-3:#c9f3ea;
+  --bg:#F7F4F1;
+  --blob-1:#ffd9c2; --blob-2:#ffe4b8; --blob-3:#f4e3d0;
   --surface:rgba(255,255,255,0.6);
   --surface-solid:#ffffff;
-  --surface-2:#f3f5fa;
+  --surface-2:#f6f1ec;
   --surface-hover:rgba(255,255,255,0.85);
-  --border:rgba(20,25,45,0.08);
-  --border-strong:rgba(20,25,45,0.16);
-  --text:#12141C; --text-muted:#5B6272; --text-faint:#9AA1B2;
-  --shadow:0 20px 50px -15px rgba(30,40,80,0.18);
+  --border:rgba(40,25,10,0.08);
+  --border-strong:rgba(40,25,10,0.16);
+  --text:#16110C; --text-muted:#6B5F55; --text-faint:#A3968A;
+  --shadow:0 20px 50px -15px rgba(60,30,10,0.18);
 }
