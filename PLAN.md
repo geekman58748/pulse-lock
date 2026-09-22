@@ -70,6 +70,8 @@ TypeScript + Bun/Node · official Yellowstone client · Next.js + Tailwind (mini
 3. **v2 = Solami Beam execution layer, deliberate scope cut** — README roadmap line + landing "Roadmap v2" plan card both state it (cuts read as scoping discipline to judges).
 4. **Landing page YES**: `/` = landing (Desktop Trenox template adapted + fully reworded, zero Trenox/Youflow strings left), `/app` = terminal. Console log line + README Run section updated.
 5. Cut list above unchanged — Beam snipe stays dead, no deploy, charts/shortcuts first to die.
+6. **Charts = Option B** (price + sparkline). Candles already flow (77,891 per 30min run) — Option C (lightweight-charts candlesticks) only if ahead after hard test + GitHub push. Price metric covers the brief's *per-token price* requirement either way.
+7. **Telegram bot CTA**: bot token in `.env`; dashboard CTA (Alerts view button + sidebar link, both hidden until `TELEGRAM_BOT_USERNAME` is set) deep-links `t.me/<bot>` so users add the bot for push alerts. First token attempt = 401 Unauthorized → needs valid token from @BotFather before CTA goes live; then chat id via `getUpdates` once the user /starts the bot → `TELEGRAM_CHAT_ID` for actual delivery.
 
 ### Known front-end bugs / debt (fix in the hard-test pass)
 - [ ] **WSOL mint mislabel**: `pool_create` with base=WSOL indexes mint=WSOL → token metadata fans out; a SOL/USDC pool renders label "SOL", and `token_update liqUsd` can fan out to wrong pools. Display-only, scores unaffected. Fix: prefer non-WSOL/USDC mint as primary in `ensure()`/`token_create`.

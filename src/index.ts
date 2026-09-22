@@ -71,6 +71,7 @@ async function main(): Promise<void> {
   const snapshot = (): Snapshot => ({
     demo,
     t: Date.now(),
+    telegramBot: config.telegramUsername,
     header: {
       slot: grpc?.stats().lastSlot ?? 0,
       freshnessMs: freshness(),

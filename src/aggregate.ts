@@ -12,6 +12,7 @@ export interface SwapRec {
   t: number // local receipt, ms
   side: 'buy' | 'sell'
   vol: number // USD
+  price: number // USD per token (0 = unknown)
   trader: string
 }
 
@@ -60,6 +61,10 @@ export interface PoolRow {
   progressPct: number | null
   score: Score
   state: PoolStateName
+  /** last known swap price (USD, 0 = unknown) */
+  price: number
+  /** chronological swap prices for the detail-pane sparkline (≤60) */
+  prices: { t: number; p: number }[]
   /** local ms receipt of the pool's most recent swap (alert latency base) */
   lastSwapAt: number
   /** newest-first recent swaps for the detail pane */
@@ -171,6 +176,7 @@ export class Registry {
           t: now,
           side: e.side === 'sell' ? 'sell' : 'buy',
           vol: num(e.volume_usd),
+          price: num(e.price_usd),
           trader: String(e.trader ?? ''),
         })
         p.traderRecs.push({ t: now, addr: String(e.trader ?? '') })
@@ -296,6 +302,15 @@ export class Registry {
         liqAdded60,
       })
 
+      const prices: { t: number; p: number }[] = []
+      let price = 0
+      for (const s of p.swaps) {
+        if (s.price > 0) {
+          prices.push({ t: s.t, p: s.price })
+          price = s.price
+        }
+      }
+
       const startedAt = p.createdAt || p.firstSeen
       out.push({
         key,
@@ -313,6 +328,8 @@ export class Registry {
         progressPct: p.progressPct,
         score,
         state: stateFor(score.total, config.alertThreshold),
+        price,
+        prices: prices.slice(-60),
         lastSwapAt: p.lastSwapAt,
         swaps: p.swaps.slice(-10).reverse(),
       })

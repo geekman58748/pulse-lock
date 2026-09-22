@@ -22,6 +22,7 @@ export const config = {
   discordWebhook: process.env.DISCORD_WEBHOOK_URL ?? '',
   telegramToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
   telegramChat: process.env.TELEGRAM_CHAT_ID ?? '',
+  telegramUsername: process.env.TELEGRAM_BOT_USERNAME ?? '',
   minLiquidityUsd: num(process.env.MIN_LIQUIDITY_USD, 2000),
   deepDiveThreshold: num(process.env.DEEP_DIVE_THRESHOLD, 60),
   alertThreshold: num(process.env.ALERT_THRESHOLD, 75),

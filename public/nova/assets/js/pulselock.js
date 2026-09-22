@@ -10,6 +10,13 @@ const fmtUSD = n => n==null ? '--' : n>=1e9 ? '$'+(n/1e9).toFixed(1)+'B' : n>=1e
 const fmtPct = n => (n==null?'--':(n*100).toFixed(0)+'%');
 const fmtAge = s => s<60 ? s+'s' : Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s';
 const fmtSlot = n => (n>0 ? n.toLocaleString('en-US') : '—');
+const fmtPrice = n => {
+  if (!n) return '--';
+  if (n >= 1) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 4 });
+  let s = String(Number(n.toPrecision(4)));
+  if (s.includes('e')) s = n.toFixed(11).replace(/0+$/, '').replace(/\.$/, '');
+  return '$' + s;
+};
 const short = a => a ? a.slice(0,4)+'…'+a.slice(-4) : '—';
 const scoreCls = n => n>=75 ? 'deep' : n>=55 ? 'watch' : 'idle';
 
@@ -22,6 +29,19 @@ const actLinks = mint => !mint ? [] : [
 const brkHTML = p => (p && p.score ? p.score.parts : []).map(b =>
   `<div class="brk-row"><span class="nm">${esc(b.name)}</span><span class="pt">+${b.pts}</span>` +
   `<span class="tr"><i style="width:${b.max ? Math.min(100, Math.round(b.pts/b.max*100)) : 0}%"></i></span></div>`).join('');
+
+/* ---------- sparkline (option B: price motion, zero deps) ---------- */
+function sparkSVG(prices){
+  if (!prices || prices.length < 3) return '';
+  const w = 300, h = 48, ps = prices.map(x => x.p);
+  const min = Math.min(...ps), max = Math.max(...ps), span = (max - min) || 1;
+  const pts = ps.map((p, i) =>
+    `${(i / (ps.length - 1) * w).toFixed(1)},${(h - 3 - ((p - min) / span) * (h - 6)).toFixed(1)}`).join(' ');
+  const up = ps[ps.length - 1] >= ps[0];
+  const color = up ? 'var(--mint)' : 'var(--red)';
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" style="color:${color}">` +
+    `<polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+}
 
 /* ---------- session state ---------- */
 let lastSnap = null;
@@ -260,9 +280,13 @@ function renderDetail(pools){
   $('dScore').textContent = n;
   $('dScore').className = 'n sc-' + scoreCls(n);
   $('dBrk').innerHTML = brkHTML(p);
+  $('dPrice').textContent = fmtPrice(p.price);
   $('dLiq').textContent = fmtUSD(p.liqUsd);
   $('dVol').textContent = fmtUSD(p.vol60);
   $('dAge').textContent = fmtAge(p.ageSec);
+  const pts = (p.prices || []).length;
+  $('dPriceLbl').textContent = pts > 1 ? pts + ' pts' : '';
+  $('dSpark').innerHTML = sparkSVG(p.prices) || '<span class="none">no price data yet</span>';
 
   const links = actLinks(p.mint);
   $('dAct').innerHTML = links.length
@@ -333,6 +357,15 @@ function renderHeader(s){
   else { pill.textContent = 'LIVE'; pill.className = 'mode-pill'; wm.style.display = 'none'; }
   $('sfDot').className = 'livedot' + (h.firehose ? '' : ' off');
   $('sfMode').textContent = s.demo ? 'SYNTHETIC FEED' : (h.firehose ? 'MAINNET LIVE' : 'RECONNECTING…');
+
+  // Telegram CTA — one click pushes the user to t.me/<bot> to add it
+  if (s.telegramBot){
+    const url = 'https://t.me/' + s.telegramBot;
+    $('tgCta').style.display = '';
+    $('tgCta').href = url;
+    $('tgSideLink').style.display = '';
+    $('tgSideLink').href = url;
+  }
 }
 
 function renderTicker(pools){

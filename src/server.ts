@@ -24,6 +24,8 @@ export interface SnapshotHeader {
 export interface Snapshot {
   demo: boolean
   t: number
+  /** public Telegram bot username (empty = CTA hidden) */
+  telegramBot: string
   header: SnapshotHeader
   pools: PoolRow[]
   alerts: Alert[]

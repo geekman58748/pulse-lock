@@ -34,6 +34,7 @@ interface DemoPool {
   hero: boolean
   bias: number
   liq: number
+  price: number
   progress: number
   traders: string[]
 }
@@ -65,6 +66,7 @@ export function startDemo(onEvent: (e: unknown) => void): DemoHandle {
       hero,
       bias: hero ? 0.86 : rnd(0.35, 0.8),
       liq: rnd(1500, 46000),
+      price: rnd(0.00001, 0.05),
       progress: rnd(5, 70),
       traders: Array.from({ length: hero ? 30 : 12 }, () => key()),
     }
@@ -97,12 +99,15 @@ export function startDemo(onEvent: (e: unknown) => void): DemoHandle {
       ;[traders[i], traders[j]] = [traders[j], traders[i]]
     }
     for (let i = 0; i < count; i++) {
+      const side = Math.random() < p.bias ? 'buy' : 'sell'
+      p.price = Math.max(1e-9, p.price * (1 + (side === 'buy' ? 1 : -1) * rnd(0.002, 0.014)))
       emit({
         type: 'swap',
         pool: p.pool,
         mint: p.mint,
-        side: Math.random() < p.bias ? 'buy' : 'sell',
+        side,
         volume_usd: rnd(usdLo, usdHi).toFixed(2),
+        price_usd: p.price.toPrecision(10),
         trader: traders[i % traders.length],
         block_time: sec(),
       })
