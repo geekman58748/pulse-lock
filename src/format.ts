@@ -17,13 +17,14 @@ export const fmtPct = (n: number | null | undefined): string =>
 export const fmtAge = (s: number): string =>
   s < 60 ? s + 's' : Math.floor(s / 60) + 'm ' + String(s % 60).padStart(2, '0') + 's'
 
-/** Explorer / trading-tool deep links for a mint (alert quality > quantity). */
+/** Execution-venue + explorer deep links for a mint. Photon first: the one-click
+ *  "act" target — alarm → click → on the token's page, ready to trade. */
 export const explorerLinks = (mint: string): { label: string; url: string }[] =>
   !mint
     ? []
     : [
-        { label: 'Birdeye', url: `https://birdeye.so/token/${mint}?chain=solana` },
         { label: 'Photon', url: `https://photon-sol.tinyastro.io/en/token/${mint}` },
         { label: 'Axiom', url: `https://axiom.trade/t/${mint}` },
+        { label: 'Birdeye', url: `https://birdeye.so/token/${mint}?chain=solana` },
         { label: 'Dexscreener', url: `https://dexscreener.com/solana/${mint}` },
       ]

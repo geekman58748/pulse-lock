@@ -45,7 +45,10 @@ export class Alerter {
     }
     this.list.unshift(a)
     if (this.list.length > 8) this.list.pop()
-    log.info(`ALERT ${a.label} score=${a.score} fired ${a.latencyMs}ms after event · pool ${a.pool}`)
+    log.info(
+      `ALERT ${a.label} score=${a.score} fired ${a.latencyMs}ms after event · pool ${a.pool}` +
+        ` · act ${explorerLinks(a.mint)[0]?.url ?? 'n/a'}`,
+    )
     void this.deliver(a)
     return true
   }
@@ -57,7 +60,7 @@ export class Alerter {
       `liq ${fmtUSD(a.liqUsd)} · 1m vol ${fmtUSD(a.vol60)} · ` +
       `wallets/10s ${a.w10} · buy ${fmtPct(a.buyRatio)}\n` +
       `fired ${a.latencyMs}ms after event\n` +
-      links.map((l) => `${l.label}: ${l.url}`).join(' · ')
+      `ACT → ` + links.map((l) => `${l.label}: ${l.url}`).join(' · ')
     )
   }
 

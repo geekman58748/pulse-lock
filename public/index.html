@@ -67,9 +67,16 @@
   .brk-row .pts{text-align:right;color:var(--text)}
   .brk-row .bar{height:4px;background:var(--border2);border-radius:2px;overflow:hidden}
   .brk-row .bar i{display:block;height:100%;background:var(--green);transition:width .15s ease-out}
-  .links{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
-  .links a{color:var(--dim);text-decoration:none;font-size:11px;border:1px solid var(--border2);padding:5px 9px;border-radius:4px}
+  .links{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .links a{color:var(--dim);text-decoration:none;font-size:11px;border:1px solid var(--border2);padding:5px 9px;border-radius:4px;transition:color .12s,border-color .12s}
   .links a:hover{color:var(--text);border-color:var(--faint)}
+  .links a.act{display:inline-flex;align-items:center;gap:6px;color:#0B0D10;background:var(--green);border-color:var(--green);padding:8px 14px;font-size:12px;font-weight:700;letter-spacing:.05em}
+  .links a.act:hover{filter:brightness(1.12);border-color:var(--green)}
+  .toast .acts{display:flex;gap:6px;margin-top:8px}
+  .toast .acts a{color:#0B0D10;background:var(--green);text-decoration:none;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;letter-spacing:.05em}
+  .toast .acts a:hover{filter:brightness(1.12)}
+  .toast .acts a.alt{color:var(--dim);background:transparent;border:1px solid var(--border2)}
+  .toast .acts a.alt:hover{color:var(--text);border-color:var(--faint)}
   .sub{padding:14px;border-top:1px solid var(--border)}
   .flows{font-size:11px;color:var(--dim);max-height:130px;overflow:hidden}
   .flows div{display:flex;justify-content:space-between;padding:3px 0}
@@ -171,10 +178,15 @@ function setBadge(ok, snap){
 
 function toast(p){
   const t = document.createElement('div'); t.className = 'toast';
+  const acts = linksOf(p.mint);
   t.innerHTML = '<b>▲ HIGH CONVICTION '+p.score.total+'</b> — $'+esc(p.label)+
-    ' · liq '+fmtUSD(p.liqUsd)+' · wallets/10s '+p.w10;
+    ' · liq '+fmtUSD(p.liqUsd)+' · wallets/10s '+p.w10+
+    (acts.length
+      ? '<div class="acts"><a href="'+acts[0][1]+'" target="_blank" rel="noopener noreferrer">⚡ ACT ON '+esc(acts[0][0])+' ↗</a>'+
+        acts.slice(1,3).map(([l,u])=>'<a class="alt" href="'+u+'" target="_blank" rel="noopener noreferrer">'+l+' ↗</a>').join('')+'</div>'
+      : '');
   document.getElementById('toasts').appendChild(t);
-  setTimeout(()=>t.remove(), 5000);
+  setTimeout(()=>t.remove(), 8000);
 }
 
 function renderHeader(s){
@@ -235,8 +247,10 @@ function renderDetail(s){
     '<span class="pts num">+'+b.pts+'</span>'+
     '<span class="bar"><i style="width:'+(b.max ? Math.min(100, b.pts/b.max*100) : 0)+'%"></i></span></div>'
   ).join('');
-  document.getElementById('dLinks').innerHTML = linksOf(p.mint).map(([label,url]) =>
-    '<a href="'+url+'" target="_blank" rel="noopener noreferrer">'+label+' ↗</a>').join('');
+  document.getElementById('dLinks').innerHTML = linksOf(p.mint).map(([label,url],i) =>
+    (i===0
+      ? '<a class="act" href="'+url+'" target="_blank" rel="noopener noreferrer">⚡ ACT ON '+esc(label)+' ↗</a>'
+      : '<a href="'+url+'" target="_blank" rel="noopener noreferrer">'+label+' ↗</a>')).join('');
   document.getElementById('dFlow').innerHTML = (p.swaps||[]).slice(0,6).map(sw => {
     const ago = Math.max(0, Math.round((Date.now()-sw.t)/1000));
     return '<div><span class="'+(sw.side==='buy'?'up':'down')+'">'+
@@ -245,9 +259,15 @@ function renderDetail(s){
 }
 
 function renderAlerts(s){
-  document.getElementById('alerts').innerHTML = s.alerts.slice(0,4).map(a =>
-    '<div class="alert"><b>ALERT $'+esc(a.label)+'</b> score '+a.score+
-    ' <span class="lat">· fired '+a.latencyMs+'ms after event</span></div>').join('');
+  document.getElementById('alerts').innerHTML = s.alerts.slice(0,3).map(a => {
+    const acts = linksOf(a.mint);
+    return '<div class="alert"><b>ALERT $'+esc(a.label)+'</b> score '+a.score+
+      ' <span class="lat">· fired '+a.latencyMs+'ms after event</span>'+
+      (acts.length ? ' <span style="display:inline-flex;gap:4px;margin-left:8px">'+
+        '<a href="'+acts[0][1]+'" target="_blank" rel="noopener noreferrer" style="color:var(--green);font-weight:700;text-decoration:none">⚡ '+esc(acts[0][0])+' ↗</a>'+
+        '<a href="'+acts[1][1]+'" target="_blank" rel="noopener noreferrer" style="color:var(--dim);text-decoration:none">'+esc(acts[1][0])+' ↗</a></span>' : '')+
+      '</div>';
+  }).join('');
 }
 
 function render(s){

@@ -1,12 +1,20 @@
 # PulseLock
 
-**Real-time Solana launch & liquidity conviction engine.** Solami Earn bounty — Sept '26.
+**Real-time Solana launch & liquidity conviction terminal.** Solami Earn bounty — Sept '26.
 
 Watch new pools/launches live, score conviction 0–100 with a *visible breakdown*,
-alert high-signal only. Read-only. Zero gas. Mainnet, live-only.
+alert high-signal only — and act in one click: every alert carries a pre-filled
+Photon/Axiom deep link, so the trader goes alarm → math → execution venue in
+seconds. Read-only. Zero gas. Zero custody. Mainnet, live-only.
 
 Solami is the entire data path: **Blur** (decoded market events) feeds breadth,
 **Yellowstone gRPC** (filtered, with `fromSlot` slot replay) feeds depth on hot pools.
+
+## Roadmap
+
+- **v2 — execution layer (Solami Beam).** Deliberate scope cut for this build:
+  the engine stays read-only and the terminal ships conviction → venue deep
+  links instead. See PLAN.md for the full cut list and rationale.
 
 ## Status
 
