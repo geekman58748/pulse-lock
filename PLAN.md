@@ -94,9 +94,19 @@ TypeScript + Bun/Node · official Yellowstone client · Next.js + Tailwind (mini
 - Secrets: key in `.env` (gitignored, verified absent from every commit). **ROTATE THE KEY AFTER THE BOUNTY** — it passed through chat.
 - README: Day 1+2 checked with evidence, landing checked, Day 3 open (reconnect hardening, public repo, Loom).
 
+### Bounty alignment (reviewed against official brief, Day 3)
+- Brief allows: *trading bot, indexer, alert system, dashboard, dev tool, SDK* — we submit **alert system + dashboard**, powered by 2 Solami products (Blur WS + Yellowstone gRPC w/ slot replay). Req #1 satisfied twice. Beam execution = documented v2 cut = scoping discipline, not a gap.
+- **Optional post-submission stretch (after push → Loom → hard test): Beam buy button** next to ⚡ Photon — throwaway demo wallet, dust on camera. The only thing that makes it a literal trading bot. Real scope add (signing/funds/failure states) — do NOT pull it forward.
+- Solami's **Webhooks** (inbound push) NOT used — unnecessary; Blur WS + gRPC already carry req #1. Ours are outbound alert webhooks (Discord/TG), a different thing.
+- **Telegram = our alert delivery channel** (Alerter → Bot API), the "alert quality > quantity" differentiator made useful on-phone: metrics + latency stamp + ⚡ Photon deep link per alert. Wired in config.ts (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`) but **never tested against a real bot** — setup: @BotFather token → message bot → grab chat id from `getUpdates` → `.env` → `ALERT_THRESHOLD=55 npm start` proves it.
+- **Metrics gap check vs brief**: price (`price_usd`) is in every swap event but never surfaced — easy win. Liquidity removes are ignored (brief says *in and out*) — easy win. 24h volume + holders = bigger (longer windows / Data API) — skip unless ahead of schedule.
+
 ### Remaining sprint order
-1. Dashboard sprint (current)
-2. Front-end hard test pass (the debt list above)
-3. Push public GitHub repo
-4. Broken images pass
-5. Loom: live slots ticking → pool event → score climbing → alert + latency stamp → kill connection → fromSlot replay closes gap → ⚡ Photon act click
+1. **Dashboard (current — new template incoming from user, wire it against snapshot/SSE contract)**
+2. Metrics wins while waiting: surface price + net liquidity (in − out)
+3. Front-end hard test pass (the debt list above)
+4. Push public GitHub repo
+5. Telegram end-to-end test (needs user's BotFather token + chat id)
+6. Broken images pass
+7. Loom: live slots ticking → pool event → score climbing → alert + latency stamp → kill connection → fromSlot replay closes gap → ⚡ Photon act click
+8. Stretch only if all green: Beam buy button (demo wallet)
