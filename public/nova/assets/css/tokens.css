@@ -1,0 +1,35 @@
+/* ============================================================
+   NOVA — tokens.css
+   Design tokens (variables CSS) shared by ALL pages.
+   Dark mode :root + Light mode html.light override.
+   ============================================================ */
+
+:root{
+  --bg:#0B0E14;
+  --blob-1:#22315c; --blob-2:#3d2255; --blob-3:#1c3b3a;
+  --surface:rgba(255,255,255,0.045);
+  --surface-solid:#12151f;
+  --surface-2:#171b28;
+  --surface-hover:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.08);
+  --border-strong:rgba(255,255,255,0.16);
+  --text:#F5F7FB; --text-muted:#8B93A7; --text-faint:#565F73;
+  --mint:#6EE7B7; --violet:#A78BFA; --red:#FB7185; --amber:#FBBF6B;
+  --shadow:0 20px 50px -12px rgba(0,0,0,0.5);
+  --radius-lg:20px; --radius-md:14px; --radius-sm:10px;
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+html.light{
+  --bg:#EEF1F7;
+  --blob-1:#c9dcfb; --blob-2:#f0d9fb; --blob-3:#c9f3ea;
+  --surface:rgba(255,255,255,0.6);
+  --surface-solid:#ffffff;
+  --surface-2:#f3f5fa;
+  --surface-hover:rgba(255,255,255,0.85);
+  --border:rgba(20,25,45,0.08);
+  --border-strong:rgba(20,25,45,0.16);
+  --text:#12141C; --text-muted:#5B6272; --text-faint:#9AA1B2;
+  --shadow:0 20px 50px -15px rgba(30,40,80,0.18);
+}

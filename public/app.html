@@ -3,296 +3,402 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PulseLock — Live Conviction Engine</title>
+<title>PulseLock — Conviction Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./nova/assets/css/shared.css">
+<link rel="stylesheet" href="./nova/assets/css/layout.css">
 <style>
-  :root{
-    --bg:#0B0D10; --panel:#12151A; --panel2:#171B22; --border:#1E232B; --border2:#2A303B;
-    --text:#E6EAF0; --dim:#8B93A1; --faint:#5A6270;
-    --green:#22E584; --red:#F4526A; --amber:#F5B544;
-    --mono:ui-monospace,'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
-  }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--bg);color:var(--text);font:13px/1.45 var(--mono);font-variant-numeric:tabular-nums}
-  .label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
-  .num{font-variant-numeric:tabular-nums}
-  .up{color:var(--green)} .down{color:var(--red)}
+/* ── PulseLock-specific layer on Nova tokens ─────────────────────── */
+.frame-wrap{overflow-y:auto;}
+.content{padding:24px 28px 40px;}
+.view.hidden{display:none;}
 
-  header{display:flex;align-items:center;gap:20px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--panel)}
-  .logo{font-weight:700;letter-spacing:.06em;font-size:14px}
-  .logo b{color:var(--green)}
-  .stat{display:flex;flex-direction:column;gap:1px}
-  .stat .v{font-size:13px}
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green)}
-  .dot.off{background:var(--faint);box-shadow:none}
-  .spacer{flex:1}
-  .badge{font-size:10px;color:var(--dim);border:1px solid var(--border2);padding:3px 8px;border-radius:4px;letter-spacing:.08em}
-  .badge.red{color:var(--red);border-color:rgba(244,82,106,.5)}
-  .badge.demo{color:var(--amber);border-color:rgba(245,181,68,.5)}
+/* topbar status chips (stream health on screen — locked differentiator) */
+.status-chips{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;min-width:0;}
+.chip-stat{display:flex;align-items:center;gap:6px;background:var(--surface-solid);border:1px solid var(--border);
+  border-radius:20px;padding:5px 11px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);white-space:nowrap;}
+.chip-stat b{color:var(--text);font-weight:600;}
+.chip-stat .k{color:var(--text-faint);font-family:var(--font-body);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;}
+.chip-stat.ok b{color:var(--mint);}
+.chip-stat.bad{border-color:rgba(251,113,133,.45);}
+.chip-stat.bad b{color:var(--red);}
+.chip-stat.warn b{color:var(--amber);}
+.livedot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 6px var(--mint);flex-shrink:0;}
+.livedot.off{background:var(--red);box-shadow:none;}
+.livedot.amber{background:var(--amber);box-shadow:0 0 6px var(--amber);}
 
-  main{display:grid;grid-template-columns:1fr 380px;gap:1px;background:var(--border);min-height:calc(100vh - 92px)}
-  section{background:var(--bg)}
-  .panel-h{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--panel)}
+/* mode pill (replaces fake profile menu) */
+.mode-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:.1em;
+  padding:6px 11px;border-radius:20px;border:1px solid rgba(110,231,183,.4);color:var(--mint);background:rgba(110,231,183,.08);}
+.mode-pill.demo{border-color:rgba(251,191,107,.45);color:var(--amber);background:rgba(251,191,107,.08);}
 
-  table{width:100%;border-collapse:collapse}
-  th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);text-align:right;padding:7px 10px;border-bottom:1px solid var(--border);font-weight:500}
-  th:first-child{text-align:left;padding-left:14px}
-  td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
-  td:first-child{text-align:left;padding-left:14px}
-  tr.row{cursor:pointer}
-  tr.row:hover td{background:var(--panel2)}
-  tr.flash td{animation:flash .6s ease-out}
-  @keyframes flash{0%{background:rgba(34,229,132,.16)}100%{background:transparent}}
-  tr.sel td{background:var(--panel2)}
-  tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--green)}
+/* demo watermark */
+#wm{position:fixed;top:64px;right:16px;z-index:120;display:none;font-size:10px;font-weight:700;letter-spacing:.14em;
+  color:var(--amber);background:rgba(251,191,107,.1);border:1px solid rgba(251,191,107,.4);padding:6px 12px;border-radius:20px;}
 
-  .score{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
-  .score .bar{width:44px;height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
-  .score .bar i{display:block;height:100%;background:var(--green)}
-  .sym{font-weight:700}
-  .sym small{color:var(--faint);font-weight:400;margin-left:6px}
-  .psbar{width:56px;height:5px;background:var(--border2);border-radius:3px;display:inline-block;overflow:hidden;vertical-align:middle}
-  .psbar i{display:block;height:100%;background:linear-gradient(90deg,var(--red) 0%,var(--red) var(--sell),var(--green) var(--sell))}
-  .tag{font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:.06em}
-  .tag.deep{color:var(--green);border:1px solid rgba(34,229,132,.35)}
-  .tag.watch{color:var(--amber);border:1px solid rgba(245,181,68,.35)}
-  .tag.idle{color:var(--faint);border:1px solid var(--border2)}
+/* stats */
+.stat-card{position:relative;overflow:hidden;}
+.stat-value.live{font-variant-numeric:tabular-nums;}
 
-  aside{display:flex;flex-direction:column}
-  .detail{padding:14px}
-  .detail .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
-  .detail .big{font-size:34px;font-weight:700;letter-spacing:-.02em}
-  .brk{margin-top:6px}
-  .brk-row{display:grid;grid-template-columns:1fr 46px 90px;gap:10px;align-items:center;padding:5px 0;font-size:12px}
-  .brk-row .name{color:var(--dim)}
-  .brk-row .pts{text-align:right;color:var(--text)}
-  .brk-row .bar{height:4px;background:var(--border2);border-radius:2px;overflow:hidden}
-  .brk-row .bar i{display:block;height:100%;background:var(--green);transition:width .15s ease-out}
-  .links{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-  .links a{color:var(--dim);text-decoration:none;font-size:11px;border:1px solid var(--border2);padding:5px 9px;border-radius:4px;transition:color .12s,border-color .12s}
-  .links a:hover{color:var(--text);border-color:var(--faint)}
-  .links a.act{display:inline-flex;align-items:center;gap:6px;color:#0B0D10;background:var(--green);border-color:var(--green);padding:8px 14px;font-size:12px;font-weight:700;letter-spacing:.05em}
-  .links a.act:hover{filter:brightness(1.12);border-color:var(--green)}
-  .toast .acts{display:flex;gap:6px;margin-top:8px}
-  .toast .acts a{color:#0B0D10;background:var(--green);text-decoration:none;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;letter-spacing:.05em}
-  .toast .acts a:hover{filter:brightness(1.12)}
-  .toast .acts a.alt{color:var(--dim);background:transparent;border:1px solid var(--border2)}
-  .toast .acts a.alt:hover{color:var(--text);border-color:var(--faint)}
-  .sub{padding:14px;border-top:1px solid var(--border)}
-  .flows{font-size:11px;color:var(--dim);max-height:130px;overflow:hidden}
-  .flows div{display:flex;justify-content:space-between;padding:3px 0}
+/* table: dense, terminal-grade */
+#poolsTable td{padding:9px 22px;}
+#poolsTable td.num,#poolsTable th.num{text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+#poolsTable tr.sel td{background:var(--surface-hover);}
+#poolsTable tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--violet);}
+#poolsTable tr.flash td{animation:rowflash .7s ease-out;}
+@keyframes rowflash{0%{background:rgba(110,231,183,.14);}100%{background:transparent;}}
+.score-cell{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end;}
+.score-cell .n{font-weight:700;font-family:var(--font-mono);min-width:26px;text-align:right;}
+.score-cell .bar{width:44px;height:4px;border-radius:3px;background:var(--surface-2,var(--border));overflow:hidden;}
+.score-cell .bar i{display:block;height:100%;border-radius:3px;transition:width .25s ease;}
+.sc-deep{color:var(--mint);} .sc-watch{color:var(--amber);} .sc-idle{color:var(--text-faint);}
+.tok{font-weight:600;}
+.tok small{display:block;font-weight:400;color:var(--text-faint);font-family:var(--font-mono);font-size:10.5px;margin-top:1px;}
+.buybar{display:inline-block;width:54px;height:5px;border-radius:3px;background:rgba(251,113,133,.3);overflow:hidden;vertical-align:middle;margin-right:6px;}
+.buybar i{display:block;height:100%;background:var(--mint);transition:width .25s ease;}
 
-  footer{border-top:1px solid var(--border);background:var(--panel);padding:8px 16px;display:flex;gap:24px;align-items:flex-start}
-  .alert{font-size:11px}
-  .alert b{color:var(--green)}
-  .alert .lat{color:var(--faint)}
-  #toasts{position:fixed;right:16px;bottom:52px;display:flex;flex-direction:column;gap:8px;z-index:9}
-  .toast{background:var(--panel2);border:1px solid var(--border2);border-left:2px solid var(--green);padding:10px 14px;font-size:12px;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slidein .2s ease-out}
-  @keyframes slidein{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
-  .watermark{position:fixed;top:10px;right:14px;font-size:9px;letter-spacing:.15em;color:var(--amber);z-index:10;display:none}
-  .empty{padding:24px 14px;color:var(--faint);font-size:12px}
+/* detail pane */
+.d-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;}
+.d-label{font-family:var(--font-display);font-size:21px;font-weight:700;letter-spacing:-.01em;}
+.d-sub{font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);margin-top:3px;display:flex;gap:8px;align-items:center;}
+.d-score{text-align:right;}
+.d-score .n{font-family:var(--font-display);font-size:40px;font-weight:700;line-height:1;letter-spacing:-.02em;}
+.d-score .l{font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;}
+.brk-row{display:grid;grid-template-columns:1fr 44px 84px;gap:10px;align-items:center;padding:7px 0;font-size:12.5px;border-top:1px solid var(--border);}
+.brk-row:first-child{border-top:none;}
+.brk-row .nm{color:var(--text-muted);}
+.brk-row .pt{text-align:right;font-family:var(--font-mono);font-weight:600;}
+.brk-row .tr{height:5px;border-radius:3px;background:var(--surface-2,var(--border));overflow:hidden;}
+.brk-row .tr i{display:block;height:100%;background:linear-gradient(90deg,var(--mint),var(--violet));border-radius:3px;transition:width .3s ease;}
+.d-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0;}
+.d-metrics .m{background:var(--surface-solid);border:1px solid var(--border);border-radius:10px;padding:9px 11px;}
+.d-metrics .m .k{font-size:9.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;}
+.d-metrics .m .v{font-family:var(--font-mono);font-size:14.5px;font-weight:600;margin-top:3px;}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.acts a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+.flow{max-height:150px;overflow-y:auto;}
+.flow .f-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;border-top:1px solid var(--border);font-family:var(--font-mono);}
+.flow .f-row .s{font-weight:700;}
+.flow .f-row .s.buy{color:var(--mint);} .flow .f-row .s.sell{color:var(--red);}
+.flow .f-row .a{color:var(--text-faint);}
+
+/* alerts feed */
+.alert-card{display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid var(--border);}
+.alert-card:first-child{border-top:none;}
+.alert-card .sc{font-family:var(--font-display);font-size:24px;font-weight:700;min-width:44px;text-align:right;}
+.alert-card .body{flex:1;min-width:0;}
+.alert-card .t1{font-size:13.5px;font-weight:600;}
+.alert-card .t2{font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);margin-top:3px;}
+.alert-card .acts a{font-size:11px;padding:5px 10px;}
+
+/* signals view */
+.sig-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:18px;}
+@media (max-width:1000px){.sig-grid{grid-template-columns:1fr;}}
+.sig-card{padding:20px 22px;}
+.sig-card .h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.sig-card .h h3{font-size:15px;}
+.sig-card .cap{font-family:var(--font-mono);font-size:12px;color:var(--violet);font-weight:600;}
+.sig-card p{font-size:13px;color:var(--text-muted);line-height:1.65;}
+.sig-card .formula{margin-top:10px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;overflow-x:auto;white-space:nowrap;}
+.ladder{display:flex;gap:10px;flex-wrap:wrap;font-family:var(--font-mono);font-size:12.5px;}
+.ladder .lv{padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-solid);}
+.ladder .lv b{font-weight:700;}
+
+/* ticker gets live content */
+.ticker-item .t-sc{font-weight:700;}
+.ticker-item .t-sc.deep{color:var(--mint);} .ticker-item .t-sc.watch{color:var(--amber);}
+
+/* misc */
+.notif-badge.hidden{display:none;}
+.pill.count{font-family:var(--font-mono);}
+@media (max-width:820px){ .status-chips{display:none;} }
 </style>
 </head>
 <body>
-<div class="watermark" id="wm">SYNTHETIC DEV FEED · NOT LIVE</div>
+<a href="#viewTerminal" class="skip-link">Skip to main content</a>
+<div class="aurora"><span></span><span></span><span></span></div>
+<div id="wm">SYNTHETIC DEV FEED · NOT LIVE</div>
 
-<header>
-  <div class="logo">PULSE<b>LOCK</b></div>
-  <div class="stat"><span class="label">Slot</span><span class="v num" id="hSlot">—</span></div>
-  <div class="stat"><span class="label">Data freshness</span><span class="v num" id="hFresh">—</span></div>
-  <div class="stat"><span class="label">Streams</span><span class="v"><span class="dot off" id="hDot"></span> <span id="hStreams">firehose 0 · deep 0</span></span></div>
-  <div class="stat"><span class="label">Reconnects</span><span class="v num" id="hReconn">—</span></div>
-  <div class="spacer"></div>
-  <div class="badge" id="hBadge">CONNECTING…</div>
-</header>
+<div class="app">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-<main>
-  <section>
-    <div class="panel-h">
-      <span class="label">Live pools · ranked by conviction</span>
-      <div class="spacer"></div>
-      <span class="badge" id="poolN">0 pools</span>
-    </div>
-    <table>
-      <thead><tr>
-        <th>Conviction</th><th>Token / Pool</th><th>Age</th><th>Liquidity</th>
-        <th>1m Volume</th><th>Wallets/10s</th><th>Buy pressure</th><th>State</th>
-      </tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <div class="empty" id="empty">Waiting for pool events…</div>
-  </section>
-
-  <aside>
-    <div class="panel-h"><span class="label" id="dName">Detail</span></div>
-    <div class="detail">
-      <div class="head">
-        <div><span class="label">Conviction score</span><div class="big num" id="dScore">—</div></div>
-        <div style="text-align:right"><span class="label">Mint</span><div class="v num" style="font-size:11px;color:var(--dim)" id="dMint">—</div></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div class="brand-text">
+        <div class="brand-name">PulseLock</div>
+        <div class="brand-tag">Conviction Terminal</div>
       </div>
-      <div class="brk" id="dBrk"></div>
-      <div class="links" id="dLinks"></div>
+      <button class="collapse-btn" id="collapseBtn" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
     </div>
-    <div class="sub">
-      <span class="label">Recent flow</span>
-      <div class="flows num" id="dFlow"></div>
+
+    <nav class="main-nav" id="mainNav" aria-label="Terminal navigation">
+      <div class="nav-label">Live</div>
+      <div class="nav-item active" data-view="viewTerminal" title="Live pools ranked by conviction">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="2" /><rect x="14" y="3" width="7" height="5" rx="2" /><rect x="14" y="12" width="7" height="9" rx="2" /><rect x="3" y="16" width="7" height="5" rx="2" /></svg>
+        <span>Terminal</span>
+      </div>
+      <div class="nav-item" data-view="viewAlerts" title="High-signal alerts with latency stamps">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+        <span>Alerts</span>
+        <span class="nav-badge hidden" id="navAlertBadge">0</span>
+      </div>
+      <div class="nav-label">Explain</div>
+      <div class="nav-item" data-view="viewSignals" title="What moves the 0–100 score">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-4 4" /></svg>
+        <span>Score signals</span>
+      </div>
+      <div class="nav-label">Meta</div>
+      <a class="nav-item" href="/" title="PulseLock landing page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+        <span>Landing</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-mini" style="cursor:default">
+        <span class="livedot off" id="sfDot"></span>
+        <div class="u-info">
+          <div class="u-name" id="sfMode">CONNECTING…</div>
+          <div class="u-role">Solami · Blur + gRPC</div>
+        </div>
+      </div>
     </div>
   </aside>
-</main>
 
-<footer>
-  <span class="label">Alert log</span>
-  <div id="alerts" style="display:flex;flex-direction:column;gap:2px"></div>
-</footer>
-<div id="toasts"></div>
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
 
-<script>
-// ── formatting (exact spec from mockup) ──────────────────────────────
-const fmtUSD = n => n==null ? '--' : n>=1e9 ? '$'+(n/1e9).toFixed(1)+'B' : n>=1e6 ? '$'+(n/1e6).toFixed(1)+'M'
-  : n>=1e3 ? '$'+(n/1e3).toFixed(1)+'K' : '$'+n.toFixed(2);
-const fmtPct = n => (n==null?'--':(n*100).toFixed(0)+'%');
-const fmtAge = s => s<60 ? s+'s' : Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s';
+      <div class="status-chips" id="statusChips" title="Stream health — freshness, reconnects, replay">
+        <span class="chip-stat"><span class="k">slot</span><b id="tSlot">—</b></span>
+        <span class="chip-stat" id="tFreshChip"><span class="k">fresh</span><b id="tFresh">—</b></span>
+        <span class="chip-stat" id="tFireChip"><span class="livedot off" id="tFireDot"></span><b id="tFire">firehose —</b></span>
+        <span class="chip-stat" id="tDeepChip"><span class="livedot off" id="tDeepDot"></span><b id="tDeep">deep —</b></span>
+        <span class="chip-stat" id="tReconn"><b>0 reconnects</b></span>
+        <span class="chip-stat"><span class="k">events</span><b id="tEvents">0</b></span>
+      </div>
 
-// chain data is attacker-controlled (token names!) — never trust it in HTML
-const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const short = a => a ? a.slice(0,4)+'…'+a.slice(-4) : '--';
-const linksOf = mint => mint ? [
-  ['Birdeye',   'https://birdeye.so/token/'+mint+'?chain=solana'],
-  ['Photon',    'https://photon-sol.tinyastro.io/en/token/'+mint],
-  ['Axiom',     'https://axiom.trade/t/'+mint],
-  ['Dexscreener','https://dexscreener.com/solana/'+mint],
-] : [];
-const scoreCls = n => n>=75 ? 'up' : n>=55 ? '' : 'down';
+      <div class="search-box" id="searchBox" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+        <span>Jump to view, act, copy…</span>
+        <kbd>⌘K</kbd>
+      </div>
 
-let selectedKey = null;   // pool key pinned in the detail pane
-let prevState  = new Map(); // pool key → state, for toast-on-transition
-let firstSnap  = true;
-let lastSnap   = null;
-let lastMsgAt  = Date.now();
+      <div class="topbar-right">
+        <button class="icon-btn" id="themeToggleBtn" aria-label="Toggle theme" title="Toggle theme">
+          <svg id="themeIcon" viewBox="0 0 0 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>
+        </button>
+        <div style="position:relative;">
+          <button class="icon-btn" id="notifBtn" aria-label="Alerts" title="Recent alerts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+          </button>
+          <span class="notif-badge hidden" id="notifBadge">0</span>
+          <div class="dropdown-panel" id="notifPanel">
+            <div class="dropdown-head"><span>Recent alerts</span><span class="mark-read" id="markAllRead">Mark all read</span></div>
+            <div id="notifList">
+              <div class="dropdown-item"><div><div class="t" style="color:var(--text-faint)">Waiting for the first alert…</div></div></div>
+            </div>
+          </div>
+        </div>
+        <span class="mode-pill" id="modePill">LIVE</span>
+      </div>
+    </header>
 
-function setBadge(ok, snap){
-  const b = document.getElementById('hBadge');
-  if (!ok){ b.textContent = 'STREAM STALE — RECONNECTING'; b.className = 'badge red'; return; }
-  if (snap && snap.demo){ b.textContent = 'SYNTHETIC DEV FEED'; b.className = 'badge demo'; }
-  else { b.textContent = 'MAINNET · LIVE-ONLY'; b.className = 'badge'; }
-}
+    <div class="ticker-bar"><div class="ticker-track" id="tickerTrack">
+      <div class="ticker-item">waiting for live pools…</div>
+    </div></div>
 
-function toast(p){
-  const t = document.createElement('div'); t.className = 'toast';
-  const acts = linksOf(p.mint);
-  t.innerHTML = '<b>▲ HIGH CONVICTION '+p.score.total+'</b> — $'+esc(p.label)+
-    ' · liq '+fmtUSD(p.liqUsd)+' · wallets/10s '+p.w10+
-    (acts.length
-      ? '<div class="acts"><a href="'+acts[0][1]+'" target="_blank" rel="noopener noreferrer">⚡ ACT ON '+esc(acts[0][0])+' ↗</a>'+
-        acts.slice(1,3).map(([l,u])=>'<a class="alt" href="'+u+'" target="_blank" rel="noopener noreferrer">'+l+' ↗</a>').join('')+'</div>'
-      : '');
-  document.getElementById('toasts').appendChild(t);
-  setTimeout(()=>t.remove(), 8000);
-}
+    <div class="frame-wrap">
+      <div class="content">
 
-function renderHeader(s){
-  const h = s.header;
-  document.getElementById('hSlot').textContent = h.slot ? h.slot.toLocaleString('en-US') : '—';
-  const fEl = document.getElementById('hFresh');
-  if (h.freshnessMs == null){ fEl.textContent = '—'; fEl.className = 'v num'; }
-  else {
-    fEl.textContent = (h.freshnessMs/1000).toFixed(2)+'s';
-    fEl.className = 'v num '+(h.freshnessMs < 2000 ? 'up' : 'down');
-  }
-  document.getElementById('hDot').className = 'dot'+(h.firehose ? '' : ' off');
-  document.getElementById('hStreams').textContent =
-    'firehose '+(h.firehose?1:0)+' · deep '+h.deepN+(s.demo ? ' · synthetic' : '');
-  let re = String(h.blurReconnects + h.grpcReconnects);
-  if (h.grpcReconnects > 0) re += ' \u00A0(replay: '+(h.replayed>0 ? h.replayed+' recovered' : '0 lost')+')';
-  document.getElementById('hReconn').innerHTML = re;
-  document.getElementById('poolN').textContent = h.pools+' pools';
-}
+        <!-- ══ VIEW: TERMINAL ══════════════════════════════════════ -->
+        <div id="viewTerminal" class="view">
+          <div class="stats-grid">
+            <div class="glass stat-card">
+              <div class="stat-top"><span class="stat-icon mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" /></svg></span></div>
+              <div class="stat-label">Events ingested</div>
+              <div class="stat-value live" id="stEvents">0</div>
+            </div>
+            <div class="glass stat-card">
+              <div class="stat-top"><span class="stat-icon violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg></span></div>
+              <div class="stat-label">Pools tracked</div>
+              <div class="stat-value live" id="stPools">0</div>
+            </div>
+            <div class="glass stat-card">
+              <div class="stat-top"><span class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" /></svg></span></div>
+              <div class="stat-label">Deep-diving now (≥ threshold)</div>
+              <div class="stat-value live" id="stDeep">0</div>
+            </div>
+            <div class="glass stat-card">
+              <div class="stat-top"><span class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg></span></div>
+              <div class="stat-label">Last alert fired after</div>
+              <div class="stat-value live" id="stLatency">—</div>
+            </div>
+          </div>
 
-function renderRows(s){
-  const tb = document.getElementById('rows');
-  tb.innerHTML = '';
-  document.getElementById('empty').style.display = s.pools.length ? 'none' : 'block';
-  const sel = selectedKey && s.pools.find(p => p.key === selectedKey);
-  const focus = sel || s.pools[0];
-  for (const p of s.pools.slice(0, 14)){
-    const tr = document.createElement('tr');
-    tr.className = 'row'+(focus && p.key===focus.key ? ' sel':'')+(p.state==='deep' ? ' flash':'');
-    tr.innerHTML =
-      '<td><span class="score"><span class="num '+scoreCls(p.score.total)+'">'+p.score.total+
-        '</span><span class="bar"><i style="width:'+p.score.total+'%"></i></span></span></td>'+
-      '<td class="sym">$'+esc(p.label)+'<small>'+esc(p.dex)+' · '+short(p.mint)+'</small></td>'+
-      '<td class="num">'+fmtAge(p.ageSec)+'</td>'+
-      '<td class="num">'+fmtUSD(p.liqUsd)+'</td>'+
-      '<td class="num">'+fmtUSD(p.vol60)+'</td>'+
-      '<td class="num">'+p.w10+'</td>'+
-      '<td><span class="psbar" style="--sell:'+((1-p.buyRatio)*100).toFixed(0)+'%"><i></i></span> '+
-        '<span class="num up">'+fmtPct(p.buyRatio)+'</span></td>'+
-      '<td><span class="tag '+p.state+'">'+p.state.toUpperCase()+'</span></td>';
-    tr.onclick = () => { selectedKey = p.key; renderRows(lastSnap || s); };
-    tb.appendChild(tr);
-  }
-}
+          <div class="grid-2">
+            <section class="glass">
+              <div class="card-head">
+                <div><h3>Live pools · ranked by conviction</h3><div class="sub">Blur firehose breadth · gRPC depth on hot pools</div></div>
+                <span class="pill count neutral" id="poolPill">0 pools</span>
+              </div>
+              <div class="table-toolbar">
+                <div class="filters-row" data-chipgroup="state">
+                  <button class="chip active" data-filter="all">All</button>
+                  <button class="chip" data-filter="watch">Watch</button>
+                  <button class="chip" data-filter="deep">Deep</button>
+                </div>
+                <div class="table-search">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                  <input type="text" id="tableSearch" placeholder="Filter token / dex / mint…">
+                </div>
+              </div>
+              <div style="overflow-x:auto;">
+                <table id="poolsTable">
+                  <thead><tr>
+                    <th class="sortable num" data-sort="score" style="text-align:right">Conviction <span class="sort-arrow">▼</span></th>
+                    <th>Token / Pool</th>
+                    <th class="sortable num" data-sort="ageSec" style="text-align:right">Age <span class="sort-arrow">▼</span></th>
+                    <th class="sortable num" data-sort="liqUsd" style="text-align:right">Liquidity <span class="sort-arrow">▼</span></th>
+                    <th class="sortable num" data-sort="vol60" style="text-align:right">1m vol <span class="sort-arrow">▼</span></th>
+                    <th class="sortable num" data-sort="w10" style="text-align:right">W/10s <span class="sort-arrow">▼</span></th>
+                    <th class="num" style="text-align:right">Buy</th>
+                    <th>State</th>
+                  </tr></thead>
+                  <tbody id="poolRows"></tbody>
+                </table>
+                <div class="empty-state" id="poolEmpty" style="display:none">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                  <h3>Waiting for pools…</h3>
+                  <p>The Blur firehose is warming up. New mainnet pools appear here within seconds of creation.</p>
+                </div>
+              </div>
+              <div class="pagination"><span class="info" id="poolInfo">—</span></div>
+            </section>
 
-function renderDetail(s){
-  const p = (selectedKey && s.pools.find(x => x.key===selectedKey)) || s.pools[0];
-  if (!p) return;
-  document.getElementById('dName').textContent = 'Detail — $'+p.label+' / '+p.dex;
-  const sc = document.getElementById('dScore');
-  sc.textContent = p.score.total;
-  sc.className = 'big num '+scoreCls(p.score.total);
-  const mintEl = document.getElementById('dMint');
-  mintEl.textContent = short(p.mint);
-  mintEl.title = p.mint;
-  document.getElementById('dBrk').innerHTML = p.score.parts.map(b =>
-    '<div class="brk-row"><span class="name">'+esc(b.name)+'</span>'+
-    '<span class="pts num">+'+b.pts+'</span>'+
-    '<span class="bar"><i style="width:'+(b.max ? Math.min(100, b.pts/b.max*100) : 0)+'%"></i></span></div>'
-  ).join('');
-  document.getElementById('dLinks').innerHTML = linksOf(p.mint).map(([label,url],i) =>
-    (i===0
-      ? '<a class="act" href="'+url+'" target="_blank" rel="noopener noreferrer">⚡ ACT ON '+esc(label)+' ↗</a>'
-      : '<a href="'+url+'" target="_blank" rel="noopener noreferrer">'+label+' ↗</a>')).join('');
-  document.getElementById('dFlow').innerHTML = (p.swaps||[]).slice(0,6).map(sw => {
-    const ago = Math.max(0, Math.round((Date.now()-sw.t)/1000));
-    return '<div><span class="'+(sw.side==='buy'?'up':'down')+'">'+
-      sw.side.toUpperCase()+' '+fmtUSD(sw.vol)+'</span><span>'+ago+'s ago</span></div>';
-  }).join('') || '<div>no swaps in window</div>';
-}
+            <aside class="glass">
+              <div class="card-head"><div><h3>Detail</h3><div class="sub" id="dSub">select a pool</div></div></div>
+              <div style="padding:14px 22px 20px;">
+                <div class="d-head">
+                  <div>
+                    <div class="d-label" id="dLabel">—</div>
+                    <div class="d-sub"><span id="dDex">—</span><button class="icon-btn" id="dCopyMint" style="width:24px;height:24px;" title="Copy mint" aria-label="Copy mint address"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button><span id="dMint">—</span></div>
+                  </div>
+                  <div class="d-score"><div class="n" id="dScore">—</div><div class="l">conviction</div></div>
+                </div>
 
-function renderAlerts(s){
-  document.getElementById('alerts').innerHTML = s.alerts.slice(0,3).map(a => {
-    const acts = linksOf(a.mint);
-    return '<div class="alert"><b>ALERT $'+esc(a.label)+'</b> score '+a.score+
-      ' <span class="lat">· fired '+a.latencyMs+'ms after event</span>'+
-      (acts.length ? ' <span style="display:inline-flex;gap:4px;margin-left:8px">'+
-        '<a href="'+acts[0][1]+'" target="_blank" rel="noopener noreferrer" style="color:var(--green);font-weight:700;text-decoration:none">⚡ '+esc(acts[0][0])+' ↗</a>'+
-        '<a href="'+acts[1][1]+'" target="_blank" rel="noopener noreferrer" style="color:var(--dim);text-decoration:none">'+esc(acts[1][0])+' ↗</a></span>' : '')+
-      '</div>';
-  }).join('');
-}
+                <div id="dBrk"></div>
 
-function render(s){
-  lastSnap = s;
-  document.getElementById('wm').style.display = s.demo ? 'block' : 'none';
-  renderHeader(s);
-  renderRows(s);
-  renderDetail(s);
-  renderAlerts(s);
-  // toast only on client-observed transitions (first snapshot = baseline)
-  for (const p of s.pools){
-    if (p.state === 'deep' && prevState.get(p.key) !== 'deep' && !firstSnap) toast(p);
-  }
-  prevState = new Map(s.pools.map(p => [p.key, p.state]));
-  firstSnap = false;
-}
+                <div class="d-metrics">
+                  <div class="m"><div class="k">Liquidity</div><div class="v" id="dLiq">—</div></div>
+                  <div class="m"><div class="k">1m vol</div><div class="v" id="dVol">—</div></div>
+                  <div class="m"><div class="k">Age</div><div class="v" id="dAge">—</div></div>
+                </div>
 
-const es = new EventSource('/stream');
-es.onmessage = e => {
-  lastMsgAt = Date.now();
-  setBadge(true, lastSnap);
-  try { render(JSON.parse(e.data)); } catch {}
-};
-es.onerror = () => setBadge(false);
-setInterval(() => { if (Date.now() - lastMsgAt > 4000) setBadge(false); }, 1000);
-</script>
+                <div class="acts" id="dAct"></div>
+
+                <div style="margin-top:16px;"><div class="stat-label" style="margin-bottom:6px;">Recent flow (last 10 swaps)</div>
+                  <div class="flow" id="dFlow"></div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <!-- ══ VIEW: ALERTS ═══════════════════════════════════════ -->
+        <div id="viewAlerts" class="view hidden">
+          <div class="page-head">
+            <div><h1>Alerts</h1><p>Quality over quantity — one alert per pool, fired once on the transition into DEEP, stamped ms-since-event. Delivered here + Discord/Telegram.</p></div>
+            <span class="pill count neutral" id="alertPill">0 fired</span>
+          </div>
+          <section class="glass">
+            <div id="alertFeed"></div>
+            <div class="empty-state" id="alertEmpty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+              <h3>No alerts yet</h3>
+              <p>Alerts fire when a pool's conviction crosses the threshold (75). On live mainnet this takes minutes; set <code>ALERT_THRESHOLD=55</code> to see one fast.</p>
+            </div>
+          </section>
+        </div>
+
+        <!-- ══ VIEW: SCORE SIGNALS ════════════════════════════════ -->
+        <div id="viewSignals" class="view hidden">
+          <div class="page-head">
+            <div><h1>What moves the score</h1><p>Four weighted signals, each capped, summed and clamped to 100. Every score on the terminal renders this exact breakdown — no black box.</p></div>
+          </div>
+
+          <div class="sig-grid">
+            <div class="glass sig-card">
+              <div class="h"><h3>Unique wallet velocity</h3><span class="cap">max +30</span></div>
+              <p>Distinct trader wallets seen in the last 10 seconds, ×1.2. A real crowd arriving beats one whale washing volume — sybils reuse wallets, crowds don't.</p>
+              <div class="formula">min(30, round(unique_wallets_10s × 1.2))</div>
+            </div>
+            <div class="glass sig-card">
+              <div class="h"><h3>Buy / sell imbalance</h3><span class="cap">max +30</span></div>
+              <p>Buy volume ÷ total volume over 60s, scaled by a confidence factor so one lucky buy on a fresh pool can't spike the score.</p>
+              <div class="formula">round(buy_ratio × 30 × min(1, trades_60s / 6))</div>
+            </div>
+            <div class="glass sig-card">
+              <div class="h"><h3>Liquidity added (60s)</h3><span class="cap">max +25</span></div>
+              <p>Fresh USD added to the pool in the last minute ÷ 400. Someone backing the pool while you watch it is the strongest conviction there is.</p>
+              <div class="formula">min(25, round(liq_added_60s / 400))</div>
+            </div>
+            <div class="glass sig-card">
+              <div class="h"><h3>Volume momentum (60s)</h3><span class="cap">max +15</span></div>
+              <p>USD volume rolling through the pool in the last minute ÷ 100 — the raw fuel under a launch.</p>
+              <div class="formula">min(15, round(vol_60s / 100))</div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <section class="glass sig-card">
+              <div class="h"><h3>State ladder</h3></div>
+              <div class="ladder">
+                <span class="lv"><b>IDLE</b> · score &lt; 55</span>
+                <span class="lv" style="border-color:rgba(251,191,107,.4)"><b style="color:var(--amber)">WATCH</b> · 55 ≤ score &lt; 75</span>
+                <span class="lv" style="border-color:rgba(110,231,183,.4)"><b style="color:var(--mint)">DEEP</b> · score ≥ 75 → alert + gRPC tx filter</span>
+              </div>
+              <p style="margin-top:14px;font-size:13px;color:var(--text-muted);line-height:1.65;">
+                Crossing into DEEP does three things at once: the row flashes, one latency-stamped alert fires
+                (console → Discord/Telegram), and the pool's addresses are added to the Yellowstone gRPC
+                transaction filter — so bandwidth only widens where conviction actually is. On reconnect the
+                stream resumes with <code>fromSlot = lastSeen + 1</code> and the server replays the gap.
+              </p>
+            </section>
+            <section class="glass sig-card">
+              <div class="h"><h3>Live example</h3><span class="cap" id="sigExLabel">—</span></div>
+              <div id="sigExample"><p style="font-size:13px;color:var(--text-faint)">Waiting for the top-scored pool…</p></div>
+            </section>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Command palette -->
+<div class="cmdk-backdrop" id="cmdkBackdrop">
+  <div class="cmdk">
+    <div class="cmdk-input-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+      <input type="text" id="cmdkInput" placeholder="Jump to view, act, copy…">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="cmdk-list" id="cmdkList"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="./nova/assets/js/shared.js"></script>
+<script src="./nova/assets/js/pulselock.js"></script>
 </body>
 </html>
