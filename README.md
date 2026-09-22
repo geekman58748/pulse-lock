@@ -23,6 +23,8 @@ Solami is the entire data path: **Blur** (decoded market events) feeds breadth,
 - [x] Day 2 — web dashboard (dark, from `mockup/`), Discord/Telegram alerts,
       live mainnet verified: firehose + gRPC + replay test PASS (31 missed slots
       recovered), alert chain firing with 35–431ms latency stamps
+- [x] Landing page — trading template adapted + reworded to PulseLock
+      (broken template images still to swap)
 - [ ] Day 3 — reconnect demo hardening, README polish, public repo + Loom
 
 ## Run (< 5 min)
@@ -33,7 +35,9 @@ Prereqs: **Node ≥ 24** (native TypeScript execution, no build step).
 git clone <this-repo> && cd pulselock
 npm install
 cp .env.example .env        # paste your Solami API key
-npm start                    # live console dashboard (Ctrl-C to exit)
+npm start                    # live engine + console mirror (Ctrl-C to exit)
+                             # landing → http://localhost:4173
+                             # live terminal → http://localhost:4173/app
 
 npm run grpc:test            # slot-replay acceptance test
 ```

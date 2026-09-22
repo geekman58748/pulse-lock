@@ -1,0 +1,44 @@
+/* Inter Tight — shipped with the Trenox template, converted from the
+   export's own .ttf sources to .woff2 (same glyphs).
+   Great Vibes — the signature face, self-hosted instead of loaded
+   from Google Fonts at runtime. */
+
+@font-face {
+  font-family: 'Intertight';
+  src: url('../images/InterTight-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Intertight';
+  src: url('../images/InterTight-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Intertight';
+  src: url('../images/InterTight-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Intertight';
+  src: url('../images/InterTight-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Great Vibes';
+  src: url('../images/GreatVibes-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

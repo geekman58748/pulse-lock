@@ -47,7 +47,12 @@ const MIME: Record<string, string> = {
 const PUBLIC_DIR = resolve(fileURLToPath(new URL('../public', import.meta.url)))
 
 async function serveStatic(pathname: string, res: ServerResponse): Promise<void> {
-  const rel = pathname === '/' ? '/index.html' : pathname
+  const rel =
+    pathname === '/'
+      ? '/index.html'
+      : pathname === '/app' || pathname === '/terminal'
+        ? '/app.html'
+        : pathname
   let decoded: string
   try {
     decoded = decodeURIComponent(rel)
@@ -105,7 +110,7 @@ export function startServer(opts: { port: number; getSnapshot: () => Snapshot })
 
   server.on('error', (e) => log.warn(`web server on :${opts.port} failed:`, e.message))
   server.listen(opts.port, () => {
-    log.info(`dashboard → http://localhost:${opts.port}`)
+    log.info(`landing → http://localhost:${opts.port} · terminal → http://localhost:${opts.port}/app`)
   })
 
   return {
