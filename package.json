@@ -1,0 +1,24 @@
+{
+  "name": "pulselock",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Real-time Solana launch & liquidity conviction engine",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/index.ts",
+    "dev": "node --watch src/index.ts",
+    "grpc:test": "node src/grpc-replay-test.ts",
+    "demo": "node src/index.ts --demo",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@triton-one/yellowstone-grpc": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.7.0"
+  }
+}

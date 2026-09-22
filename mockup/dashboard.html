@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PulseLock — Dashboard Mockup (fake data)</title>
+<style>
+  :root{
+    --bg:#0B0D10; --panel:#12151A; --panel2:#171B22; --border:#1E232B; --border2:#2A303B;
+    --text:#E6EAF0; --dim:#8B93A1; --faint:#5A6270;
+    --green:#22E584; --red:#F4526A; --amber:#F5B544;
+    --mono:ui-monospace,'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font:13px/1.45 var(--mono);font-variant-numeric:tabular-nums}
+  .label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .num{font-variant-numeric:tabular-nums}
+  .up{color:var(--green)} .down{color:var(--red)}
+
+  header{display:flex;align-items:center;gap:20px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--panel)}
+  .logo{font-weight:700;letter-spacing:.06em;font-size:14px}
+  .logo b{color:var(--green)}
+  .stat{display:flex;flex-direction:column;gap:1px}
+  .stat .v{font-size:13px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green)}
+  .spacer{flex:1}
+  .badge{font-size:10px;color:var(--dim);border:1px solid var(--border2);padding:3px 8px;border-radius:4px;letter-spacing:.08em}
+
+  main{display:grid;grid-template-columns:1fr 380px;gap:1px;background:var(--border);min-height:calc(100vh - 92px)}
+  section{background:var(--bg)}
+  .panel-h{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--panel)}
+
+  table{width:100%;border-collapse:collapse}
+  th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);text-align:right;padding:7px 10px;border-bottom:1px solid var(--border);font-weight:500}
+  th:first-child{text-align:left;padding-left:14px}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+  td:first-child{text-align:left;padding-left:14px}
+  tr.row{cursor:pointer}
+  tr.row:hover td{background:var(--panel2)}
+  tr.flash td{animation:flash .6s ease-out}
+  @keyframes flash{0%{background:rgba(34,229,132,.16)}100%{background:transparent}}
+  tr.sel td{background:var(--panel2)}
+  tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--green)}
+
+  .score{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
+  .score .bar{width:44px;height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
+  .score .bar i{display:block;height:100%;background:var(--green)}
+  .sym{font-weight:700}
+  .sym small{color:var(--faint);font-weight:400;margin-left:6px}
+  .psbar{width:56px;height:5px;background:var(--border2);border-radius:3px;display:inline-block;overflow:hidden;vertical-align:middle}
+  .psbar i{display:block;height:100%;background:linear-gradient(90deg,var(--red) 0%,var(--red) var(--sell),var(--green) var(--sell))}
+  .tag{font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:.06em}
+  .tag.deep{color:var(--green);border:1px solid rgba(34,229,132,.35)}
+  .tag.watch{color:var(--amber);border:1px solid rgba(245,181,68,.35)}
+  .tag.idle{color:var(--faint);border:1px solid var(--border2)}
+
+  aside{display:flex;flex-direction:column}
+  .detail{padding:14px}
+  .detail .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+  .detail .big{font-size:34px;font-weight:700;letter-spacing:-.02em}
+  .brk{margin-top:6px}
+  .brk-row{display:grid;grid-template-columns:1fr 46px 90px;gap:10px;align-items:center;padding:5px 0;font-size:12px}
+  .brk-row .name{color:var(--dim)}
+  .brk-row .pts{text-align:right;color:var(--text)}
+  .brk-row .bar{height:4px;background:var(--border2);border-radius:2px;overflow:hidden}
+  .brk-row .bar i{display:block;height:100%;background:var(--green);transition:width .15s ease-out}
+  .links{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
+  .links a{color:var(--dim);text-decoration:none;font-size:11px;border:1px solid var(--border2);padding:5px 9px;border-radius:4px}
+  .links a:hover{color:var(--text);border-color:var(--faint)}
+  .kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+  .kv .k{color:var(--dim)}
+  .sub{padding:14px;border-top:1px solid var(--border)}
+  .flows{font-size:11px;color:var(--dim);max-height:130px;overflow:hidden}
+  .flows div{display:flex;justify-content:space-between;padding:3px 0}
+
+  footer{border-top:1px solid var(--border);background:var(--panel);padding:8px 16px;display:flex;gap:24px;align-items:center}
+  .alert{font-size:11px}
+  .alert b{color:var(--green)}
+  .alert .lat{color:var(--faint)}
+  #toasts{position:fixed;right:16px;bottom:52px;display:flex;flex-direction:column;gap:8px;z-index:9}
+  .toast{background:var(--panel2);border:1px solid var(--border2);border-left:2px solid var(--green);padding:10px 14px;font-size:12px;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slidein .2s ease-out}
+  @keyframes slidein{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+  .watermark{position:fixed;top:10px;right:14px;font-size:9px;letter-spacing:.15em;color:var(--faint);z-index:10}
+</style>
+</head>
+<body>
+<div class="watermark">MOCKUP · FAKE DATA · NOT LIVE</div>
+
+<header>
+  <div class="logo">PULSE<b>LOCK</b></div>
+  <div class="stat"><span class="label">Slot</span><span class="v num" id="slot">312,441,208</span></div>
+  <div class="stat"><span class="label">Data freshness</span><span class="v num up" id="fresh">0.38s</span></div>
+  <div class="stat"><span class="label">Streams</span><span class="v"><span class="dot"></span> firehose 1 · deep <span id="deepN">3</span></span></div>
+  <div class="stat"><span class="label">Reconnects</span><span class="v num">1 <span style="color:var(--faint)">(replay: 0 lost)</span></span></div>
+  <div class="spacer"></div>
+  <div class="badge">MAINNET · LIVE-ONLY</div>
+</header>
+
+<main>
+  <section>
+    <div class="panel-h">
+      <span class="label">Live pools · ranked by conviction</span>
+      <div class="spacer"></div>
+      <span class="badge" id="poolN">7 pools</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Conviction</th><th>Token / Pool</th><th>Age</th><th>Liquidity</th>
+        <th>1m Volume</th><th>Wallets/10s</th><th>Buy pressure</th><th>State</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </section>
+
+  <aside>
+    <div class="panel-h"><span class="label" id="dName">Detail — $BONKLET / Raydium</span></div>
+    <div class="detail">
+      <div class="head">
+        <div><span class="label">Conviction score</span><div class="big num up" id="dScore">82</div></div>
+        <div style="text-align:right"><span class="label">Mint</span><div class="v num" style="font-size:11px;color:var(--dim)" id="dMint">7xKX…gUiA</div></div>
+      </div>
+      <div class="brk" id="dBrk"></div>
+      <div class="links">
+        <a href="#" onclick="return false">Birdeye ↗</a><a href="#" onclick="return false">Photon ↗</a>
+        <a href="#" onclick="return false">Axiom ↗</a><a href="#" onclick="return false">Dexscreener ↗</a>
+      </div>
+    </div>
+    <div class="sub">
+      <span class="label">Recent flow</span>
+      <div class="flows num" id="dFlow"></div>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <span class="label">Alert log</span>
+  <div id="alerts" style="display:flex;flex-direction:column;gap:2px"></div>
+</footer>
+<div id="toasts"></div>
+
+<script>
+// ── formatting (real app must follow this exact spec) ────────────────
+const fmtUSD = n => n==null ? '--' : n>=1e9 ? '$'+(n/1e9).toFixed(1)+'B' : n>=1e6 ? '$'+(n/1e6).toFixed(1)+'M'
+  : n>=1e3 ? '$'+(n/1e3).toFixed(1)+'K' : '$'+n.toFixed(2);
+const fmtPct = n => (n==null?'--':(n*100).toFixed(0)+'%');
+const fmtAge = s => s<60 ? s+'s' : Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s';
+
+// ── fake world ────────────────────────────────────────────────────────
+const NAMES=['BONKLET','MOONPIG','FARTCOIN2','GRIND','SNIPER','WIFDOG','PEPEN'];
+let slot=312441208, pools=[], selected=null;
+
+function newPool(){
+  const p={sym:NAMES[pools.length%NAMES.length]+(pools.length>7?pools.length:''), mint:Math.random().toString(36).slice(2,6).toUpperCase(),
+    age:0, liq:1500+Math.random()*45000, vol:200+Math.random()*9000, wallets:Math.floor(2+Math.random()*30),
+    buy:0.4+Math.random()*0.55, score:0, state:'idle', brk:[]};
+  pools.unshift(p); if(pools.length>9) pools.pop();
+  return p;
+}
+function tick(p){
+  p.age+=3; p.vol=Math.max(100,p.vol+(Math.random()-.45)*p.vol*.25);
+  p.wallets=Math.max(1,Math.round(p.wallets+(Math.random()-.5)*8));
+  p.liq=Math.max(800,p.liq+(Math.random()-.42)*p.liq*.12);
+  p.buy=Math.min(.96,Math.max(.05,p.buy+(Math.random()-.48)*.14));
+  p.brk=[['Unique wallet velocity',Math.round(p.wallets*1.2)],['Buy/sell imbalance',Math.round(p.buy*30)],['Liquidity added 60s',Math.round(p.liq/400)],['Volume concentration',Math.round(Math.random()*18)]];
+  p.score=Math.min(99,p.brk.reduce((a,b)=>a+b[1],0));
+  if(p.score>=75&&p.state!=='deep'){p.state='deep';toast(p)}
+  else if(p.score>=55&&p.state==='idle')p.state='watch';
+}
+function render(){
+  const tb=document.getElementById('rows'); tb.innerHTML='';
+  [...pools].sort((a,b)=>b.score-a.score).forEach(p=>{
+    const tr=document.createElement('tr'); tr.className='row'+(selected===p?' sel':'')+(p.state==='deep'?' flash':'');
+    tr.innerHTML=`<td><span class="score"><span class="num ${p.score>=75?'up':p.score>=55?'':'down'}">${p.score}</span><span class="bar"><i style="width:${p.score}%"></i></span></span></td>
+      <td class="sym">${p.sym}<small>${p.mint}…</small></td><td class="num">${fmtAge(p.age)}</td>
+      <td class="num">${fmtUSD(p.liq)}</td><td class="num">${fmtUSD(p.vol)}</td><td class="num">${p.wallets}</td>
+      <td><span class="psbar" style="--sell:${((1-p.buy)*100).toFixed(0)}%"><i></i></span> <span class="num up">${fmtPct(p.buy)}</span></td>
+      <td><span class="tag ${p.state}">${p.state.toUpperCase()}</span></td>`;
+    tr.onclick=()=>{selected=p;render()};
+    tb.appendChild(tr);
+  });
+  document.getElementById('poolN').textContent=pools.length+' pools';
+  document.getElementById('deepN').textContent=pools.filter(p=>p.state==='deep').length;
+  const d=selected||pools[0];
+  if(d){document.getElementById('dScore').textContent=d.score;
+    document.getElementById('dName').textContent='Detail — $'+d.sym+' / Raydium';
+    document.getElementById('dMint').textContent=d.mint+'9xKX…gUiA';
+    document.getElementById('dBrk').innerHTML=d.brk.map(b=>`<div class="brk-row"><span class="name">${b[0]}</span><span class="pts num">+${b[1]}</span><span class="bar"><i style="width:${Math.min(100,b[1]*3)}%"></i></span></div>`).join('');
+    document.getElementById('dFlow').innerHTML=[...Array(5)].map((_,i)=>`<div><span class="${Math.random()>0.35?'up':'down'}">${Math.random()>0.35?'BUY':'SELL'} ${Math.random().toFixed(1)} SOL</span><span>${(d.age-i*7)}s ago</span></div>`).join('');
+  }
+}
+function toast(p){
+  const t=document.createElement('div'); t.className='toast';
+  t.innerHTML=`<b>▲ HIGH CONVICTION ${p.score}</b> — $${p.sym} · liq ${fmtUSD(p.liq)} · wallets/10s ${p.wallets}`;
+  document.getElementById('toasts').appendChild(t); setTimeout(()=>t.remove(),5000);
+  const a=document.createElement('div'); a.className='alert';
+  a.innerHTML=`<b>ALERT $${p.sym}</b> score ${p.score} <span class="lat">· fired 218ms after event slot</span>`;
+  const L=document.getElementById('alerts'); L.prepend(a); while(L.children.length>3)L.lastChild.remove();
+}
+setInterval(()=>{slot+=Math.floor(2+Math.random()*2);document.getElementById('slot').textContent=slot.toLocaleString('en-US');
+  document.getElementById('fresh').textContent=(0.25+Math.random()*0.3).toFixed(2)+'s';},400);
+setInterval(()=>{pools.forEach(tick); if(pools.length<7||Math.random()<.25)newPool(); render();},3000);
+for(let i=0;i<7;i++)newPool(); pools.forEach(p=>{p.age=Math.random()*120|0;tick(p)}); render();
+</script>
+</body>
+</html>
