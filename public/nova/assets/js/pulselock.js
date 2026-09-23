@@ -43,6 +43,140 @@ function sparkSVG(prices){
     `<polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
+/* ---------- PnL + shareable call card (canvas, zero deps) ---------- */
+const fmtPnl = v => v==null ? '' : (v>=0?'+':'\u2212') + (Math.abs(v)>=100 ? Math.abs(v).toFixed(0) : Math.abs(v).toFixed(1)) + '%';
+const pnlClass = v => v==null ? 'flat' : v >= 0 ? 'up' : 'down';
+
+/* "According to Solami" — summary built from the fire-time metrics */
+function buildInsight(a){
+  const bits = [];
+  bits.push(`${a.w10} unique wallet${a.w10===1?'':'s'} in the 10s before the call`);
+  bits.push(`${fmtPct(a.buyRatio)} buy pressure across ${fmtUSD(a.vol60)} of 1m volume`);
+  if (a.liqUsd) bits.push(`${fmtUSD(a.liqUsd)} liquidity at fire`);
+  let s = 'According to Solami \u2014 ' + bits.join(', ') + '.';
+  s += ` Caught ${a.latencyMs}ms after the triggering swap`;
+  if (a.freshMs != null) s += ` with the stream ${((a.freshMs/1000)).toFixed(2)}s fresh`;
+  s += '.';
+  if (a.pnlPct != null) s += ` Since the call: ${fmtPnl(a.pnlPct)}.`;
+  return s;
+}
+
+function seriesSince(a){
+  const pools = lastSnap ? lastSnap.pools : [];
+  const p = pools.find(x => x.key === a.key);
+  if (!p || !p.prices || p.prices.length < 3) return [];
+  const since = p.prices.filter(pt => pt.t >= a.at - 2000);
+  return since.length >= 3 ? since : p.prices.slice(-40);
+}
+
+async function shareCard(a){
+  const W = 1080, H = 1080, PAD = 72;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const c = cv.getContext('2d');
+  try { await document.fonts.ready; } catch(e){}
+  const disp = s => { c.font = s.replace('FONT', "'Space Grotesk'"); };
+  const mono = s => { c.font = s.replace('MONO', "'JetBrains Mono'"); };
+  const C = { bg:'#0A0A0B', panel:'#141416', border:'rgba(255,255,255,0.09)', text:'#F7F5F4',
+    mut:'#98928C', faint:'#5E5852', acc:'#FF640D', red:'#FB7185' };
+
+  // background + bottom horizon glow (matches /app)
+  c.fillStyle = C.bg; c.fillRect(0,0,W,H);
+  const g = c.createLinearGradient(0,H,0,H*0.55);
+  g.addColorStop(0,'rgba(255,100,13,0.22)'); g.addColorStop(1,'rgba(255,100,13,0)');
+  c.fillStyle = g; c.fillRect(0,H*0.55,W,H*0.45);
+  c.strokeStyle = C.border; c.lineWidth = 2; c.strokeRect(24,24,W-48,H-48);
+
+  const rr = (x,y,w,h,r,fill,stroke) => { c.beginPath(); c.roundRect(x,y,w,h,r);
+    if (fill){ c.fillStyle = fill; c.fill(); } if (stroke){ c.strokeStyle = stroke; c.stroke(); } };
+  const left = (txt,x,y) => c.fillText(txt,x,y);
+  const acc = txt => { c.fillStyle = C.acc; };
+  const wrap = (text,x,y,maxW,lh) => { const words = text.split(' '); let line = '', yy = y;
+    for (const w of words){ const t = line ? line+' '+w : w;
+      if (c.measureText(t).width > maxW){ c.fillText(line,x,yy); line = w; yy += lh; } else line = t; }
+    if (line) c.fillText(line,x,yy); return yy; };
+
+  // header
+  disp('700 34px FONT'); c.fillStyle = C.acc; left('⚡', PAD, 104);
+  c.fillStyle = C.text; left('PULSELOCK', PAD+44, 104);
+  disp('700 22px FONT'); const pillT = 'CALLED';
+  const pw = c.measureText(pillT).width + 34;
+  rr(W-PAD-pw, 76, pw, 40, 20, C.acc); c.fillStyle = C.bg; left(pillT, W-PAD-pw+17, 103);
+
+  // token + score
+  disp('700 66px FONT'); c.fillStyle = C.text; left('$'+a.label, PAD, 205);
+  mono('24px MONO'); c.fillStyle = C.mut; left(`${a.dex} · fired ${a.latencyMs}ms after event`, PAD, 245);
+  disp('700 72px FONT'); c.fillStyle = C.acc;
+  c.textAlign = 'right'; left(String(a.score), W-PAD, 205);
+  disp('600 18px FONT'); c.fillStyle = C.mut;
+  left('CONVICTION', W-PAD, 238); c.textAlign = 'left';
+
+  // PnL hero
+  const up = (a.pnlPct ?? 0) >= 0;
+  disp('700 128px FONT'); c.fillStyle = a.pnlPct==null ? C.mut : (up ? C.acc : C.red);
+  const pnlTxt = a.pnlPct==null ? '—' : fmtPnl(a.pnlPct);
+  left(pnlTxt, PAD, 385);
+  disp('600 20px FONT'); c.fillStyle = C.mut; left('SINCE CALL', PAD+4, 425);
+  mono('26px MONO'); c.fillStyle = C.text;
+  const fmtP = v => v ? (v>=1 ? '$'+v.toFixed(4) : '$'+String(Number(v.toPrecision(4)))) : '—';
+  left(`${fmtP(a.priceAt)}  →  ${fmtP(a.priceNow)}`, PAD, 475);
+
+  // sparkline of prices since the call
+  const pts = seriesSince(a); const sy = 515, sh = 200, sx = PAD, sw = W - PAD*2;
+  rr(sx, sy, sw, sh, 14, 'rgba(255,255,255,0.03)', C.border);
+  if (pts.length >= 3){
+    const vals = pts.map(p => p.p); const mn = Math.min(...vals), mx = Math.max(...vals), sp = (mx-mn)||1;
+    const X = i => sx + 14 + (i/(pts.length-1))*(sw-28);
+    const Y = v => sy + sh - 18 - ((v-mn)/sp)*(sh-36);
+    const line = new Path2D(); line.moveTo(X(0), Y(vals[0]));
+    vals.forEach((v,i) => line.lineTo(X(i), Y(v)));
+    const area = new Path2D(line); area.lineTo(X(vals.length-1), sy+sh-10); area.lineTo(X(0), sy+sh-10); area.closePath();
+    const ag = c.createLinearGradient(0,sy,0,sy+sh); ag.addColorStop(0,'rgba(255,100,13,0.30)'); ag.addColorStop(1,'rgba(255,100,13,0)');
+    c.fillStyle = ag; c.fill(area);
+    c.strokeStyle = a.pnlPct!=null && a.pnlPct<0 ? C.red : C.acc; c.lineWidth = 3; c.stroke(line);
+  } else {
+    mono('22px MONO'); c.fillStyle = C.faint; c.textAlign='center';
+    left('price series from Solami swaps', W/2, sy+sh/2+8); c.textAlign='left';
+  }
+
+  // metrics row
+  const mets = [['LIQ', fmtUSD(a.liqUsd)], ['1M VOL', fmtUSD(a.vol60)], ['W/10S', String(a.w10)], ['BUY', fmtPct(a.buyRatio)]];
+  const my = 782, cw = (W-PAD*2)/4;
+  mets.forEach(([k,v],i) => {
+    mono('700 32px MONO'); c.fillStyle = C.text; left(v, PAD+i*cw, my);
+    disp('600 17px FONT'); c.fillStyle = C.faint; left(k, PAD+i*cw, my+30);
+  });
+
+  // Solami insight panel
+  const iy = 842, ih = 158;
+  rr(PAD, iy, W-PAD*2, ih, 16, C.panel, C.border);
+  disp('700 19px FONT'); c.fillStyle = C.acc; left('◉ SOLAMI INSIGHT', PAD+24, iy+38);
+  disp('400 23px FONT'); c.fillStyle = '#C9C4BE';
+  wrap(buildInsight(a), PAD+24, iy+74, W-PAD*2-48, 32);
+
+  // footer
+  disp('500 19px FONT'); c.fillStyle = C.faint;
+  left('powered by solami · blur firehose + yellowstone grpc', PAD, H-52);
+  c.textAlign = 'right'; c.fillStyle = C.acc; disp('700 19px FONT');
+  left('pulselock · mainnet live', W-PAD, H-52); c.textAlign = 'left';
+
+  const done = msg => showToast(msg, 'success');
+  const fname = `pulselock-${String(a.label).replace(/[^A-Za-z0-9]/g,'')}-${a.pnlPct!=null?fmtPnl(a.pnlPct).replace(/[^0-9A-Za-z+-]/g,''):'call'}.png`;
+  cv.toBlob(async blob => {
+    if (!blob) return;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      done('Call card copied — paste it anywhere');
+    } catch (e) {
+      const url = URL.createObjectURL(blob);
+      const el = document.createElement('a'); el.href = url; el.download = fname;
+      document.body.appendChild(el); el.click(); el.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      done('Call card saved');
+    }
+  }, 'image/png');
+}
+
 /* ---------- session state ---------- */
 let lastSnap = null;
 let firstSnap = true;
@@ -311,10 +445,11 @@ function renderAlerts(alerts){
     return `<div class="alert-card">
       <div class="sc sc-${scoreCls(a.score)}">${a.score}</div>
       <div class="body">
-        <div class="t1">$${esc(a.label)} <span style="color:var(--text-faint);font-weight:400">· ${esc(a.dex)}</span></div>
+        <div class="t1">$${esc(a.label)} <span style="color:var(--text-faint);font-weight:400">· ${esc(a.dex)}</span>${a.pnlPct != null ? `<span class="pnl-chip ${pnlClass(a.pnlPct)}">${fmtPnl(a.pnlPct)}</span>` : ''}</div>
         <div class="t2">fired ${a.latencyMs}ms after event · ${fmtAge(ago)} ago · liq ${fmtUSD(a.liqUsd)} · vol ${fmtUSD(a.vol60)} · w/10s ${a.w10} · buy ${fmtPct(a.buyRatio)}</div>
+        <div class="insight"><b>◉ SOLAMI</b>${esc(buildInsight(a))}</div>
       </div>
-      <div class="acts">${links.length ? `<a class="btn btn-primary btn-sm" href="${links[0][1]}" target="_blank" rel="noopener noreferrer">⚡ ${esc(links[0][0])} ↗</a>` : ''}</div>
+      <div class="acts">${links.length ? `<a class="btn btn-primary btn-sm" href="${links[0][1]}" target="_blank" rel="noopener noreferrer">⚡ ${esc(links[0][0])} ↗</a>` : ''}<button class="btn btn-ghost btn-sm" data-share="${esc(a.key)}">⬇ Call card</button></div>
     </div>`;
   }).join('');
 }
@@ -443,6 +578,13 @@ function boot(){
   initCmdk();
   initTableControls();
   initStaleWatch();
+
+  $('alertFeed').addEventListener('click', e => {
+    const b = e.target.closest('[data-share]');
+    if (!b) return;
+    const a = (lastSnap ? lastSnap.alerts : []).find(x => x.key === b.dataset.share);
+    if (a) void shareCard(a);
+  });
 
   $('dCopyMint').addEventListener('click', () => {
     const p = lastSnap ? (lastSnap.pools.find(x => x.key === selectedKey) || lastSnap.pools[0]) : null;

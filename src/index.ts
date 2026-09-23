@@ -95,7 +95,7 @@ async function main(): Promise<void> {
   const engine = setInterval(() => {
     rows = registry.rows()
     for (const r of rows) {
-      if (r.state === 'deep') alerter.maybeFire(r)
+      if (r.state === 'deep') alerter.maybeFire(r, freshness())
       if (
         grpc &&
         r.score.total >= config.deepDiveThreshold &&
@@ -105,6 +105,17 @@ async function main(): Promise<void> {
         deepDive.add(r.key)
         grpc.setTxAccounts([...deepDive])
       }
+    }
+    // live PnL on fired alerts: last known swap price vs price at the call
+    for (const a of alerter.list) {
+      const st = registry.pools.get(a.key)
+      if (!st) continue
+      let lp = a.priceNow
+      for (let i = st.swaps.length - 1; i >= 0; i--) {
+        if (st.swaps[i].price > 0) { lp = st.swaps[i].price; break }
+      }
+      a.priceNow = lp
+      a.pnlPct = a.priceAt > 0 && lp > 0 ? ((lp - a.priceAt) / a.priceAt) * 100 : null
     }
   }, 1000)
 

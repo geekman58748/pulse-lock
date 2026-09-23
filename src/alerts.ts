@@ -17,6 +17,12 @@ export interface Alert {
   w10: number
   buyRatio: number
   at: number
+  /** price at fire / latest known / pct change since the call */
+  priceAt: number
+  priceNow: number
+  pnlPct: number | null
+  /** stream freshness (ms) at fire — null in demo / no firehose */
+  freshMs: number | null
 }
 
 /**
@@ -27,7 +33,7 @@ export class Alerter {
   list: Alert[] = []
   private fired = new Set<string>()
 
-  maybeFire(row: PoolRow): boolean {
+  maybeFire(row: PoolRow, freshMs: number | null = null): boolean {
     if (this.fired.has(row.key)) return false
     this.fired.add(row.key)
     const a: Alert = {
@@ -43,6 +49,10 @@ export class Alerter {
       w10: row.w10,
       buyRatio: row.buyRatio,
       at: Date.now(),
+      priceAt: row.price,
+      priceNow: row.price,
+      pnlPct: null,
+      freshMs,
     }
     this.list.unshift(a)
     if (this.list.length > 8) this.list.pop()
