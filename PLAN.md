@@ -72,7 +72,8 @@ TypeScript + Bun/Node · official Yellowstone client · Next.js + Tailwind (mini
 5. Cut list above unchanged — Beam snipe stays dead, no deploy, charts/shortcuts first to die.
 6. **Charts = Option B** (price + sparkline). Candles already flow (77,891 per 30min run) — Option C (lightweight-charts candlesticks) only if ahead after hard test + GitHub push. Price metric covers the brief's *per-token price* requirement either way.
 7. **Telegram bot CTA**: bot token in `.env`; dashboard CTA (Alerts view button + sidebar link, both hidden until `TELEGRAM_BOT_USERNAME` is set) deep-links `t.me/<bot>` so users add the bot for push alerts. First token attempt = 401 Unauthorized → needs valid token from @BotFather before CTA goes live; then chat id via `getUpdates` once the user /starts the bot → `TELEGRAM_CHAT_ID` for actual delivery.
-8. **Self-serve subscriptions (the judge-proof fix)**: `src/telegram.ts` long-poll loop auto-registers any chat that taps START (≤25s), persists `data/subscribers.json` (gitignored), sends a welcome, broadcasts every alert to ALL subscribers, prunes blocked chats. No manual chat-id step — judges/visitors just tap START and receive. `TELEGRAM_CHAT_ID` demoted to optional bootstrap only.
+8. **Self-serve subscriptions (the judge-proof fix)**: `src/telegram.ts` long-poll loop auto-registers any chat that taps START (≤25s), persists `data/subscribers.json` (gitignored), sends a welcome, broadcasts every alert to ALL subscribers, prunes blocked chats. No manual chat-id step — judges/visitors just tap START and receive. `TELEGRAM_CHAT_ID` demoted to optional bootstrap only. **PROVEN LIVE**: user's START auto-consumed in 0.5s → chat 2046725891 persisted → survived restart → welcome delivered → `@pulselock_bot`.
+9. **Call cards + live PnL (shipped pre-push, commit `4d97a65`)**: alerts capture `priceAt`/`freshMs` at fire; engine tick updates `priceNow`/`pnlPct` every 1s from the registry. Feed shows a live SINCE-CALL chip + auto-built `◉ SOLAMI` summary line; `⬇ Call card` canvas-paints a 1080×1080 themed PNG (brand header, score, price arrow, PnL hero, sparkline, metrics row, **SOLAMI INSIGHT** paragraph: wallets/buy/vol/liq/latency/freshness) → clipboard-copy w/ download fallback. `freshMs`=null in demo (insight skips). Proof: demo WIFDOG 0.0546 → 0.0954 = +74.7%. Loom flex: fire alert → card → paste.
 
 ### Known front-end bugs / debt (fix in the hard-test pass)
 - [ ] **WSOL mint mislabel**: `pool_create` with base=WSOL indexes mint=WSOL → token metadata fans out; a SOL/USDC pool renders label "SOL", and `token_update liqUsd` can fan out to wrong pools. Display-only, scores unaffected. Fix: prefer non-WSOL/USDC mint as primary in `ensure()`/`token_create`.
@@ -101,15 +102,14 @@ TypeScript + Bun/Node · official Yellowstone client · Next.js + Tailwind (mini
 - Brief allows: *trading bot, indexer, alert system, dashboard, dev tool, SDK* — we submit **alert system + dashboard**, powered by 2 Solami products (Blur WS + Yellowstone gRPC w/ slot replay). Req #1 satisfied twice. Beam execution = documented v2 cut = scoping discipline, not a gap.
 - **Optional post-submission stretch (after push → Loom → hard test): Beam buy button** next to ⚡ Photon — throwaway demo wallet, dust on camera. The only thing that makes it a literal trading bot. Real scope add (signing/funds/failure states) — do NOT pull it forward.
 - Solami's **Webhooks** (inbound push) NOT used — unnecessary; Blur WS + gRPC already carry req #1. Ours are outbound alert webhooks (Discord/TG), a different thing.
-- **Telegram = our alert delivery channel** (Alerter → Bot API), the "alert quality > quantity" differentiator made useful on-phone: metrics + latency stamp + ⚡ Photon deep link per alert. Wired in config.ts (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`) but **never tested against a real bot** — setup: @BotFather token → message bot → grab chat id from `getUpdates` → `.env` → `ALERT_THRESHOLD=55 npm start` proves it.
-- **Metrics gap check vs brief**: price (`price_usd`) is in every swap event but never surfaced — easy win. Liquidity removes are ignored (brief says *in and out*) — easy win. 24h volume + holders = bigger (longer windows / Data API) — skip unless ahead of schedule.
+- **Telegram = our alert delivery channel** (Alerter → Bot API → self-serve subscriber broadcast) — **TESTED END-TO-END**: valid `@pulselock_bot` token in `.env`, user subscribed (2046725891), welcome delivered, poll loop survives restart. CTA live on dashboard (button + sidebar link).
+- **Metrics gap check vs brief**: ~~price never surfaced~~ **DONE** (detail pane + call cards; demo fixtures carry a drifting series). Liquidity **removes** still ignored (brief says *in and out*) — easy win. 24h volume + holders = bigger (longer windows / Data API) — skip unless ahead of schedule.
 
 ### Remaining sprint order
-1. **Dashboard (current — new template incoming from user, wire it against snapshot/SSE contract)**
-2. Metrics wins while waiting: surface price + net liquidity (in − out)
-3. Front-end hard test pass (the debt list above)
-4. Push public GitHub repo
-5. Telegram end-to-end test (needs user's BotFather token + chat id)
-6. Broken images pass
-7. Loom: live slots ticking → pool event → score climbing → alert + latency stamp → kill connection → fromSlot replay closes gap → ⚡ Photon act click
-8. Stretch only if all green: Beam buy button (demo wallet)
+1. ~~Dashboard~~ **DONE** — Nova shell rebuilt as `/app` (single page, orange/black theme, bottom horizon gradient), commits `97bd6d5` `d0c301a` `e9c5d1a`
+2. ~~Price metric + Telegram E2E + call cards~~ **DONE** (`3598766` `9eb4557` `4d97a65`)
+3. **Front-end hard test pass (the debt list above) — NEXT**
+4. **Push public GitHub repo — the last hard requirement**
+5. Broken images pass (landing)
+6. Loom: live slots ticking → pool event → score climbing → alert + latency stamp → phone gets Telegram push → call card paste → ⚡ Photon act click → kill connection → fromSlot replay closes gap
+7. Stretch only if all green: net-liquidity (adds − removes) · Option C candlesticks · Beam buy button (demo wallet)
