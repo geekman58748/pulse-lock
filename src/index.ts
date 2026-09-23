@@ -33,6 +33,7 @@ async function main(): Promise<void> {
   startTelegramPoll() // auto-register anyone who /starts the bot
 
   const alerter = new Alerter()
+  alerter.restore()
   let blur: BlurHandle | null = null
   let grpc: GrpcHandle | null = null
   let feed: DemoHandle | null = null
@@ -116,8 +117,17 @@ async function main(): Promise<void> {
       }
       a.priceNow = lp
       a.pnlPct = a.priceAt > 0 && lp > 0 ? ((lp - a.priceAt) / a.priceAt) * 100 : null
+      // keep a price-series snapshot on the alert so its card works even after
+      // the pool drops out of the registry (restart / eviction)
+      a.hist = []
+      for (let i = st.swaps.length - 1; i >= 0 && a.hist.length < 60; i--) {
+        const s = st.swaps[i]
+        if (s.price > 0) a.hist.unshift({ t: s.t, p: s.price })
+      }
     }
+    if (++persistTick % 5 === 0) alerter.persist()
   }, 1000)
+  let persistTick = 0
 
   const port = Number(process.env.PORT) || 4173
   const web = startServer({ port, getSnapshot: snapshot })

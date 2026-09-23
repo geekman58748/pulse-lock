@@ -1,3 +1,4 @@
+import { writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { config } from './config.ts'
 import { log } from './log.ts'
 import { broadcast } from './telegram.ts'
@@ -23,7 +24,11 @@ export interface Alert {
   pnlPct: number | null
   /** stream freshness (ms) at fire — null in demo / no firehose */
   freshMs: number | null
+  /** price series snapshot (last 60 swaps) so cards survive restarts */
+  hist?: { t: number; p: number }[]
 }
+
+const STATE = 'data/alerts.json'
 
 /**
  * Alert quality > quantity: fires once per pool, only on the transition
@@ -32,6 +37,30 @@ export interface Alert {
 export class Alerter {
   list: Alert[] = []
   private fired = new Set<string>()
+
+  /** reload past calls from disk — restarts never wipe the feed or cards */
+  restore(): void {
+    try {
+      if (!existsSync(STATE)) return
+      const arr = JSON.parse(readFileSync(STATE, 'utf8')) as Alert[]
+      if (!Array.isArray(arr)) return
+      this.list = arr
+        .filter((a) => a && typeof a.key === 'string' && typeof a.at === 'number')
+        .slice(0, 8)
+      for (const a of this.list) this.fired.add(a.key)
+      if (this.list.length) log.info(`alerts: restored ${this.list.length} past call(s) from disk`)
+    } catch {
+      /* corrupt/missing state is not fatal — fresh start */
+    }
+  }
+
+  persist(): void {
+    try {
+      writeFileSync(STATE, JSON.stringify(this.list))
+    } catch (e) {
+      log.warn('alerts: save failed:', e instanceof Error ? e.message : String(e))
+    }
+  }
 
   maybeFire(row: PoolRow, freshMs: number | null = null): boolean {
     if (this.fired.has(row.key)) return false
@@ -56,6 +85,7 @@ export class Alerter {
     }
     this.list.unshift(a)
     if (this.list.length > 8) this.list.pop()
+    this.persist()
     log.info(
       `ALERT ${a.label} score=${a.score} fired ${a.latencyMs}ms after event · pool ${a.pool}` +
         ` · act ${explorerLinks(a.mint)[0]?.url ?? 'n/a'}`,

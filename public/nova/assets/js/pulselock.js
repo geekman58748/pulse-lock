@@ -64,9 +64,14 @@ function buildInsight(a){
 function seriesSince(a){
   const pools = lastSnap ? lastSnap.pools : [];
   const p = pools.find(x => x.key === a.key);
-  if (!p || !p.prices || p.prices.length < 3) return [];
-  const since = p.prices.filter(pt => pt.t >= a.at - 2000);
-  return since.length >= 3 ? since : p.prices.slice(-40);
+  // live pool series first; fall back to the alert's own persisted snapshot
+  // so call cards still draw for old/evicted pools after a restart
+  const raw = (p && p.prices && p.prices.length >= 3)
+    ? p.prices
+    : ((a.hist && a.hist.length >= 3) ? a.hist : []);
+  if (!raw.length) return [];
+  const since = raw.filter(pt => pt.t >= a.at - 2000);
+  return since.length >= 3 ? since : raw.slice(-40);
 }
 
 async function shareCard(a){
