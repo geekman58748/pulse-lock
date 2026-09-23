@@ -1,6 +1,7 @@
 # PulseLock — LOCKED SPEC
 > Real-time Solana launch & liquidity conviction engine. Solami Sept '26 Earn bounty.
-> Status: plan locked. Build starts ONLY after current hackathon is shipped.
+> Status: Day 3 — build shipped through alert persistence (`81aacec`).
+> Remaining: hard test → README pass → public push → broken images → Loom.
 
 ## Product (one line)
 Watch new pools/launches live, deep-dive the hot ones, score conviction 0–100
@@ -17,15 +18,16 @@ with a visible breakdown, alert high-signal only. Read-only. Zero gas.
 ## Solami usage (judge criterion 1)
 - **Blur WS** = primary data path (pools, launches, trades, liquidity) — decoded, no parsing
 - **Yellowstone gRPC** = selective depth on hot pools (filtered accounts) + slot replay
-- Webhooks = alert delivery. Mirage = fallback if gRPC client fights back.
+- Solami Webhooks + Mirage NOT used (gRPC never fought back) — ours are outbound
+  Discord/Telegram alert delivery. See bounty-alignment section.
 - **Beam = DEAD unless everything else ships.** Data API = convenience only.
 Two products deep > six products shallow.
 
 ## CUT LIST (decided now, not mid-sprint)
 - ❌ Beam snipe (drags in wallets/gas/liability)
 - ❌ VPS/Railway deploy (repo + video of local live run satisfies the bounty)
-- ⚠️ Charts/flourish — only if ahead of schedule
-- ⚠️ Keyboard shortcuts — last polish item, first to die
+- ✅ Charts — **Option B shipped** (price + sparkline + call-card spark); Option C candles stay cut
+- ✅ Keyboard shortcuts — **⌘K palette shipped** in the Nova terminal (last polish item survived)
 
 ## Fallback ladder (day 3 reality check)
 Behind? → dashboard = plain dark table → charts die → Beam stays dead →
@@ -48,8 +50,10 @@ live slots ticking → pool event → score updating → alert firing w/ latency
 - [ ] Works. A submission that does not run live is not judged.
 
 ## Stack
-TypeScript + Bun/Node · official Yellowstone client · Next.js + Tailwind (minimal dark)
-· in-memory state + JSON persistence · Discord/Telegram webhook alerts
+TypeScript + tsx/Node · official Yellowstone client · static HTML/CSS/JS front end
+(vendored Nova admin shell in `public/nova/` as `/app`, Trenox landing at `/`, no build step)
+· in-memory state + JSON persistence (state.json / alerts.json / subscribers.json)
+· Discord + Telegram (self-serve subscriber broadcast) alert delivery
 
 ## Env (see .env.example) — NEVER COMMIT REAL KEYS
 
@@ -63,6 +67,10 @@ TypeScript + Bun/Node · official Yellowstone client · Next.js + Tailwind (mini
 - Slot replay PASS: forced drop → `fromSlot=lastSeen+1` → 31 missed updates recovered. (Rerun until the "gap closed" variant prints for the camera; the "PASS (resumed)" variant with 0 recovered is also valid but weaker on video.)
 - Web endpoints all 200: `/` landing, `/app` terminal, `/api/snapshot` JSON, `/stream` SSE (1s cadence)
 - Live event shapes confirmed match parser — `swap{trader,side,volume_usd,block_time}`, `liquidity{kind,…}`, `token_create{name,symbol,creator}`, `pool_create{…}`. No parser changes needed.
+- Frontend automation: typecheck clean, 63/63 id cross-refs, zero template-fakery strings, all routes 200 (/, /app, /stream, css/js assets). **Human browser pass still owed** — see debt list.
+- Self-serve Telegram PROVEN: user's START consumed in 0.5s → chat persisted → survives restart → welcome delivered (`@pulselock_bot`).
+- Persistence PROVEN: kill + fresh boot → `alerts: restored 1 past call(s)` with live PnL + hist=60.
+- Call-card pipeline PROVEN at data level (WIFDOG priceAt 0.0546 → 0.0954 = +74.7%, fields complete) — PNG itself not yet eyeballed.
 
 ### Decisions locked this session
 1. **One-click ACT, NOT one-click trade** — deep links with pre-filled mint. Photon = primary (URL takes token directly), Axiom/Birdeye secondary. Zero custody/keys/tx-building. Wired in: detail pane `⚡ ACT ON PHOTON` button, alert toasts (8s linger), footer alert log inline links, webhook `ACT →` line, console log `act <url>`.
@@ -71,9 +79,12 @@ TypeScript + Bun/Node · official Yellowstone client · Next.js + Tailwind (mini
 4. **Landing page YES**: `/` = landing (Desktop Trenox template adapted + fully reworded, zero Trenox/Youflow strings left), `/app` = terminal. Console log line + README Run section updated.
 5. Cut list above unchanged — Beam snipe stays dead, no deploy, charts/shortcuts first to die.
 6. **Charts = Option B** (price + sparkline). Candles already flow (77,891 per 30min run) — Option C (lightweight-charts candlesticks) only if ahead after hard test + GitHub push. Price metric covers the brief's *per-token price* requirement either way.
-7. **Telegram bot CTA**: bot token in `.env`; dashboard CTA (Alerts view button + sidebar link, both hidden until `TELEGRAM_BOT_USERNAME` is set) deep-links `t.me/<bot>` so users add the bot for push alerts. First token attempt = 401 Unauthorized → needs valid token from @BotFather before CTA goes live; then chat id via `getUpdates` once the user /starts the bot → `TELEGRAM_CHAT_ID` for actual delivery.
+7. **Telegram bot CTA**: valid bot token in `.env` (first paste was truncated → 401; full token verified OK) → `TELEGRAM_BOT_USERNAME=pulselock_bot`; dashboard CTA (Alerts-view button + sidebar link, both rendered once username is set) deep-links `t.me/pulselock_bot` → user taps Start. Manual chat-id step fully replaced by decision #8's poll.
 8. **Self-serve subscriptions (the judge-proof fix)**: `src/telegram.ts` long-poll loop auto-registers any chat that taps START (≤25s), persists `data/subscribers.json` (gitignored), sends a welcome, broadcasts every alert to ALL subscribers, prunes blocked chats. No manual chat-id step — judges/visitors just tap START and receive. `TELEGRAM_CHAT_ID` demoted to optional bootstrap only. **PROVEN LIVE**: user's START auto-consumed in 0.5s → chat 2046725891 persisted → survived restart → welcome delivered → `@pulselock_bot`.
 9. **Call cards + live PnL (shipped pre-push, commit `4d97a65`)**: alerts capture `priceAt`/`freshMs` at fire; engine tick updates `priceNow`/`pnlPct` every 1s from the registry. Feed shows a live SINCE-CALL chip + auto-built `◉ SOLAMI` summary line; `⬇ Call card` canvas-paints a 1080×1080 themed PNG (brand header, score, price arrow, PnL hero, sparkline, metrics row, **SOLAMI INSIGHT** paragraph: wallets/buy/vol/liq/latency/freshness) → clipboard-copy w/ download fallback. `freshMs`=null in demo (insight skips). Proof: demo WIFDOG 0.0546 → 0.0954 = +74.7%. Loom flex: fire alert → card → paste.
+10. **Alert persistence (commit `81aacec`)**: `data/alerts.json` (gitignored) written on fire + every 5th tick; `Alerter.restore()` on boot re-seeds the feed (cap 8) AND the fired-once set (no double-firing — keys are stable on live, random only in demo fixtures). Each alert carries `hist` = last-60-swap price series so the card's sparkline works after the pool leaves the registry; PnL freezes "as of last flow" until the pool reappears. History older than this commit is unrecoverable (Telegram text has no price data for cards). `data/` exists in fresh clones via tracked `.gitkeep`.
+11. **Theme = landing palette everywhere**: tokens.css + hardcoded-accent sweep → warm black `#0A0A0B` + `#FF640D`; then the **bottom horizon gradient** (pure black top, orange glow rising from below, ember blobs under the fold, peak alpha .26 so it stays atmosphere). Knobs: `.aurora` block in app.html (`.26`/`.14` intensity, `18%/38%` climb).
+12. **Nova template provenance (open-source hygiene)**: shell CSS/JS vendored from fbici.github.io/nova-admin-template-v3 into `public/nova/`. Before public push: check the template's license + attribute it in README (judges read repos; borrowed assets uncredited = build-quality ding). Landing assets (Trenox) same question.
 
 ### Known front-end bugs / debt (fix in the hard-test pass)
 - [ ] **WSOL mint mislabel**: `pool_create` with base=WSOL indexes mint=WSOL → token metadata fans out; a SOL/USDC pool renders label "SOL", and `token_update liqUsd` can fan out to wrong pools. Display-only, scores unaffected. Fix: prefer non-WSOL/USDC mint as primary in `ensure()`/`token_create`.
@@ -83,18 +94,25 @@ TypeScript + Bun/Node · official Yellowstone client · Next.js + Tailwind (mini
 - [ ] **`TrenoxScripts` JS identifier** left in place (invisible; renaming may break template scripts — touch only if needed).
 - [ ] **100% BUY column** on micro-pools = real data (first trades of a launch are buys), NOT a parser bug — full log split is 64/36. Confirm judges don't read it as broken.
 - [ ] **Demo never alerts at 75**: fixture peaks at score 66 → use `ALERT_THRESHOLD=60 npm run demo` for demo alert showcase.
-- [ ] **Discord/TG webhooks never tested against a real endpoint** — no webhook URL was set. Set `DISCORD_WEBHOOK_URL` once and fire a test.
+- [ ] **Discord webhook never tested** — no URL ever set; set `DISCORD_WEBHOOK_URL` + fire once. **Telegram: subscriber path proven (welcome received) but a LIVE alert push landing on the phone is still unconfirmed** — verify before Loom claims it.
+- [ ] **Call card PNG never eyeballed by a human** — data plumbing proven only. Click `⬇ Call card` on a live alert: check layout, fonts (Space Grotesk/JetBrains Mono in canvas), sparkline, clipboard copy (needs secure ctx — LAN-IP access falls back to download, by design).
+- [ ] **LOG_EVENTS disk bomb**: live default wrote 3.5 GB of jsonl in one day (`events-2026-09-23.jsonl`). Judges running `npm start` replicate this. Decide: default `LOG_EVENTS=0` for release, or document `LOG_EVENTS=0` prominently in README env table.
+- [ ] **Demo-only: restored + fresh alerts can show the same label twice** (fixture keys are random per run; live keys are stable → impossible on mainnet). Cosmetic.
 - [ ] Landing page not yet eyeballed in a real browser (only curl-verified).
 
 ### Test recipes (hard test + Loom)
 - Live: `npm start` (key in `.env`)
+- Parallel test instance (keeps live 4173 untouched): `PORT=4174 npm run demo`
 - Fast alerts: `ALERT_THRESHOLD=55 npm start`
 - Deep-dive filters early: `DEEP_DIVE_THRESHOLD=45 npm start`
 - Demo (no key): `npm run demo` · demo w/ alerts: `LOG_EVENTS=0 ALERT_THRESHOLD=60 npm run demo`
 - Replay: `npm run grpc:test`
+- Card proof: alert fires → `⬇ Call card` → PNG in clipboard (paste anywhere) or download
+- Telegram proof: subscriber present → alert fires → phone push arrives
+- Restart proof: `pkill -f 'node src/index.ts'` → `npm start` → log shows `alerts: restored N past call(s)`
 
 ### Repo / submission state
-- git initialized: 4 commits (`5fc6108` initial, `6071af5` replay-report fix, `628fbd4` act deep-links + positioning, `35bc388` landing). **NOT pushed anywhere yet** — public GitHub repo = hard submission requirement, still open.
+- git: **14 commits** through `81aacec` (landing → dashboard → theme → gradient → price+CTA → self-serve TG → call cards → persistence). **NOT pushed yet** — public GitHub repo = the last hard requirement. Secrets sweep (`git log -p | grep -i key`) before push. **ROTATE THE KEY AFTER THE BOUNTY**.
 - Secrets: key in `.env` (gitignored, verified absent from every commit). **ROTATE THE KEY AFTER THE BOUNTY** — it passed through chat.
 - README: Day 1+2 checked with evidence, landing checked, Day 3 open (reconnect hardening, public repo, Loom).
 
@@ -109,7 +127,7 @@ TypeScript + Bun/Node · official Yellowstone client · Next.js + Tailwind (mini
 1. ~~Dashboard~~ **DONE** — Nova shell rebuilt as `/app` (single page, orange/black theme, bottom horizon gradient), commits `97bd6d5` `d0c301a` `e9c5d1a`
 2. ~~Price metric + Telegram E2E + call cards~~ **DONE** (`3598766` `9eb4557` `4d97a65`)
 3. **Front-end hard test pass (the debt list above) — NEXT**
-4. **Push public GitHub repo — the last hard requirement**
+4. **README Day-3 pass + secrets sweep** — document self-serve Telegram, call cards, persistence, theme, `LOG_EVENTS` decision, Nova/Trenox attribution; then **Push public GitHub repo — the last hard requirement**. Screenshot the 10x row/sparkline for the submission form while at it.
 5. Broken images pass (landing)
 6. Loom: live slots ticking → pool event → score climbing → alert + latency stamp → phone gets Telegram push → call card paste → ⚡ Photon act click → kill connection → fromSlot replay closes gap
 7. Stretch only if all green: net-liquidity (adds − removes) · Option C candlesticks · Beam buy button (demo wallet)
