@@ -20,8 +20,9 @@ const fmtPrice = n => {
 const short = a => a ? a.slice(0,4)+'…'+a.slice(-4) : '—';
 const scoreCls = n => n>=75 ? 'deep' : n>=55 ? 'watch' : 'idle';
 
-const actLinks = mint => !mint ? [] : [
-  ['Photon',     'https://photon-sol.tinyastro.io/en/token/'+mint],
+const actLinks = (mint, dex, pool) => !mint ? [] : [
+  ['Photon',     pool ? 'https://photon-sol.tinyastro.io/en/lp/'+pool
+                     : 'https://photon-sol.tinyastro.io/en/token/'+mint],
   ['Axiom',      'https://axiom.trade/t/'+mint],
   ['Birdeye',    'https://birdeye.so/token/'+mint+'?chain=solana'],
   ['Dexscreener','https://dexscreener.com/solana/'+mint],
@@ -46,6 +47,7 @@ function sparkSVG(prices){
 /* ---------- PnL + shareable call card (canvas, zero deps) ---------- */
 const fmtPnl = v => v==null ? '' : (v>=0?'+':'\u2212') + (Math.abs(v)>=100 ? Math.abs(v).toFixed(0) : Math.abs(v).toFixed(1)) + '%';
 const pnlClass = v => v==null ? 'flat' : v >= 0 ? 'up' : 'down';
+const peakPct = a => (a.peakPrice && a.priceAt > 0) ? ((a.peakPrice - a.priceAt) / a.priceAt) * 100 : null;
 
 /* "According to Solami" — summary built from the fire-time metrics */
 function buildInsight(a){
@@ -57,7 +59,11 @@ function buildInsight(a){
   s += ` Caught ${a.latencyMs}ms after the triggering swap`;
   if (a.freshMs != null) s += ` with the stream ${((a.freshMs/1000)).toFixed(2)}s fresh`;
   s += '.';
-  if (a.pnlPct != null) s += ` Since the call: ${fmtPnl(a.pnlPct)}.`;
+  if (a.pnlPct != null) {
+    s += ` Since the call: ${fmtPnl(a.pnlPct)}.`;
+    const pk = peakPct(a);
+    if (pk != null && pk > 0) s += ` Peaked at ${fmtPnl(pk)} before settling.`;
+  }
   return s;
 }
 
@@ -125,6 +131,11 @@ async function shareCard(a){
   mono('26px MONO'); c.fillStyle = C.text;
   const fmtP = v => v ? (v>=1 ? '$'+v.toFixed(4) : '$'+String(Number(v.toPrecision(4)))) : '—';
   left(`${fmtP(a.priceAt)}  →  ${fmtP(a.priceNow)}`, PAD, 475);
+  const pk = peakPct(a);
+  if (pk != null && pk > 0) {
+    disp('600 18px FONT'); c.fillStyle = C.acc;
+    left(`▲ PEAKED ${fmtPnl(pk)} AFTER THE CALL`, PAD+4, 425 + 82);
+  }
 
   // sparkline of prices since the call
   const pts = seriesSince(a); const sy = 515, sh = 200, sx = PAD, sw = W - PAD*2;
@@ -303,7 +314,7 @@ function buildCmdkItems(){
   ];
   const p = sel();
   if (p && p.mint){
-    const [ph, phUrl] = actLinks(p.mint)[0];
+    const [ph, phUrl] = actLinks(p.mint, p.dex, p.key)[0];
     items.push({label:`Act on $${p.label} — open ${ph}`, icon:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>', run:()=>window.open(phUrl,'_blank','noopener')});
   }
   return items;
@@ -427,7 +438,7 @@ function renderDetail(pools){
   $('dPriceLbl').textContent = pts > 1 ? pts + ' pts' : '';
   $('dSpark').innerHTML = sparkSVG(p.prices) || '<span class="none">no price data yet</span>';
 
-  const links = actLinks(p.mint);
+  const links = actLinks(p.mint, p.dex, p.key);
   $('dAct').innerHTML = links.length
     ? `<a class="btn btn-primary btn-sm" href="${links[0][1]}" target="_blank" rel="noopener noreferrer">⚡ Act on ${esc(links[0][0])} ↗</a>` +
       links.slice(1,3).map(([l,u]) => `<a class="btn btn-ghost btn-sm" href="${u}" target="_blank" rel="noopener noreferrer">${esc(l)} ↗</a>`).join('')
@@ -443,14 +454,14 @@ function renderDetail(pools){
 function renderAlerts(alerts){
   $('alertPill').textContent = alerts.length + ' fired';
   $('alertEmpty').style.display = alerts.length ? 'none' : '';
-  const links0 = a => actLinks(a.mint);
+  const links0 = a => actLinks(a.mint, a.dex, a.pool);
   $('alertFeed').innerHTML = alerts.map(a => {
     const links = links0(a);
     const ago = Math.max(0, Math.round((Date.now()-a.at)/1000));
     return `<div class="alert-card">
       <div class="sc sc-${scoreCls(a.score)}">${a.score}</div>
       <div class="body">
-        <div class="t1">$${esc(a.label)} <span style="color:var(--text-faint);font-weight:400">· ${esc(a.dex)}</span>${a.pnlPct != null ? `<span class="pnl-chip ${pnlClass(a.pnlPct)}">${fmtPnl(a.pnlPct)}</span>` : ''}</div>
+        <div class="t1">$${esc(a.label)} <span style="color:var(--text-faint);font-weight:400">· ${esc(a.dex)}</span>${a.pnlPct != null ? `<span class="pnl-chip ${pnlClass(a.pnlPct)}">${fmtPnl(a.pnlPct)}</span>` : ''}${peakPct(a) != null && peakPct(a) > 0 ? ` <span class="pnl-chip up">▲ ${fmtPnl(peakPct(a))} peak</span>` : ''}</div>
         <div class="t2">fired ${a.latencyMs}ms after event · ${fmtAge(ago)} ago · liq ${fmtUSD(a.liqUsd)} · vol ${fmtUSD(a.vol60)} · w/10s ${a.w10} · buy ${fmtPct(a.buyRatio)}</div>
         <div class="insight"><b>◉ SOLAMI</b>${esc(buildInsight(a))}</div>
       </div>

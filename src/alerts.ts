@@ -22,6 +22,9 @@ export interface Alert {
   priceAt: number
   priceNow: number
   pnlPct: number | null
+  /** highest price seen since the call — proves the signal caught the top
+   *  even after a post-hype dump. Optional: pre-peak alerts restore fine. */
+  peakPrice?: number
   /** stream freshness (ms) at fire — null in demo / no firehose */
   freshMs: number | null
   /** price series snapshot (last 60 swaps) so cards survive restarts */
@@ -79,6 +82,7 @@ export class Alerter {
       buyRatio: row.buyRatio,
       at: Date.now(),
       priceAt: row.price,
+      peakPrice: row.price,
       priceNow: row.price,
       pnlPct: null,
       freshMs,
@@ -88,14 +92,14 @@ export class Alerter {
     this.persist()
     log.info(
       `ALERT ${a.label} score=${a.score} fired ${a.latencyMs}ms after event · pool ${a.pool}` +
-        ` · act ${explorerLinks(a.mint)[0]?.url ?? 'n/a'}`,
+        ` · act ${explorerLinks(a.mint, a.dex, a.pool)[0]?.url ?? 'n/a'}`,
     )
     void this.deliver(a)
     return true
   }
 
   private line(a: Alert): string {
-    const links = explorerLinks(a.mint)
+    const links = explorerLinks(a.mint, a.dex, a.pool)
     return (
       `▲ HIGH CONVICTION ${a.score} — $${a.label} (${a.dex})\n` +
       `liq ${fmtUSD(a.liqUsd)} · 1m vol ${fmtUSD(a.vol60)} · ` +

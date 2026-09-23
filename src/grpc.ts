@@ -89,6 +89,10 @@ export function startGrpc(opts: GrpcOpts): GrpcHandle {
   }
 
   function buildRequest(fromSlot?: number): SubscribeRequest {
+    // NOTE (verified against the proto): these per-kind maps carry client-named
+    // filters — an EMPTY map serializes as zero filters, i.e. unsubscribed.
+    // We only ever create real filters for slots ("pl") and deep-dive txs, so
+    // the request stays lean. Ping/pong reply reuses this shape.
     const req: SubscribeRequest = {
       accounts: {},
       slots: { pl: {} },

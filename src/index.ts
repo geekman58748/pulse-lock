@@ -116,6 +116,8 @@ async function main(): Promise<void> {
         if (st.swaps[i].price > 0) { lp = st.swaps[i].price; break }
       }
       a.priceNow = lp
+      // track the peak since the call — the alert's honest "it caught the top" proof
+      if (a.priceAt > 0 && lp > (a.peakPrice ?? a.priceAt)) a.peakPrice = lp
       a.pnlPct = a.priceAt > 0 && lp > 0 ? ((lp - a.priceAt) / a.priceAt) * 100 : null
       // keep a price-series snapshot on the alert so its card works even after
       // the pool drops out of the registry (restart / eviction)
