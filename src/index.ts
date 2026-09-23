@@ -6,6 +6,7 @@ import { Registry, type PoolRow } from './aggregate.ts'
 import { Alerter } from './alerts.ts'
 import { startServer, type Snapshot } from './server.ts'
 import { startDemo, type DemoHandle } from './demo.ts'
+import { startTelegramPoll } from './telegram.ts'
 import { fmtUSD, fmtPct, fmtAge } from './format.ts'
 
 /* Formatting — exact spec from mockup/dashboard.html */
@@ -29,6 +30,7 @@ async function main(): Promise<void> {
 
   const registry = new Registry()
   if (!demo) registry.load()
+  startTelegramPoll() // auto-register anyone who /starts the bot
 
   const alerter = new Alerter()
   let blur: BlurHandle | null = null

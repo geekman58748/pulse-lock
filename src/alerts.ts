@@ -1,5 +1,6 @@
 import { config } from './config.ts'
 import { log } from './log.ts'
+import { broadcast } from './telegram.ts'
 import { fmtUSD, fmtPct, explorerLinks } from './format.ts'
 import type { PoolRow } from './aggregate.ts'
 
@@ -81,12 +82,8 @@ export class Alerter {
     if (config.discordWebhook) {
       await post('discord', config.discordWebhook, { content: text })
     }
-    if (config.telegramToken && config.telegramChat) {
-      await post(
-        'telegram',
-        `https://api.telegram.org/bot${config.telegramToken}/sendMessage`,
-        { chat_id: config.telegramChat, text, disable_web_page_preview: true },
-      )
-    }
+    // self-serve subscribers (anyone who tapped START on the bot) + optional
+    // TELEGRAM_CHAT_ID bootstrap — no manual chat-id wiring per user
+    await broadcast(text)
   }
 }
