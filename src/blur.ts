@@ -78,8 +78,12 @@ export function startBlur(opts: BlurOpts): BlurHandle {
       console.log(`[blur] connected (${label})`)
       // empty filter = full firehose (documented). List snapshots arrive
       // immediately on connect, so the dashboard has data from second one.
+      // backfill: N replays the last N events per type on connect — pools
+      // born during a disconnect get their token_create/name/liquidity
+      // replayed instead of staying orphaned (registry dedups swap/liquidity
+      // signatures, so replayed volume never double-counts).
       try {
-        sock.send('{}')
+        sock.send('{"backfill":30}')
       } catch {
         /* socket died between open and send */
       }

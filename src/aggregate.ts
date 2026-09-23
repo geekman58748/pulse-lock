@@ -84,6 +84,8 @@ function blockMs(e: Record<string, unknown>): number {
 export class Registry {
   pools = new Map<string, PoolState>()
   mintIndex = new Map<string, Set<string>>()
+  /** seen tx signatures — Blur backfill/replays must never double-count */
+  private seenSigs = new Set<string>()
 
   /** quote-like mints never identify the token of interest (WSOL pairs etc.) */
   static QUOTE_MINTS = new Set([
@@ -171,6 +173,17 @@ export class Registry {
   ingest(raw: unknown): void {
     if (raw === null || typeof raw !== 'object') return
     const e = raw as Record<string, unknown>
+    // dedup by tx identity: signature + tx/ix indices (a replayed event is
+    // byte-identical; two DIFFERENT swaps inside one tx share the signature
+    // but differ in ix_index — both must survive). Backfill replays of the
+    // same tx collapse to one.
+    const sig = typeof e.signature === 'string' ? e.signature : ''
+    if (sig && (e.type === 'swap' || e.type === 'liquidity')) {
+      const ikey = `${sig}:${String(e.tx_index ?? '')}:${String(e.ix_index ?? '')}:${String(e.inner_ix_index ?? '')}`
+      if (this.seenSigs.has(ikey)) return
+      this.seenSigs.add(ikey)
+      if (this.seenSigs.size > 100_000) this.seenSigs.clear()
+    }
     const now = Date.now()
 
     switch (e.type) {
@@ -231,7 +244,11 @@ export class Registry {
 
       case 'token_update': {
         const liq = num(e.liquidity_usd, NaN)
-        for (const p of this.byMint(e.mint)) {
+        // direct pool key first (pump.fun pools can be mintless at birth);
+        // mint index as fallback for events without a pool field
+        const tkey = String(e.pool ?? '')
+        const targets = tkey && this.pools.has(tkey) ? [this.pools.get(tkey)!] : this.byMint(e.mint)
+        for (const p of targets) {
           if (Number.isFinite(liq)) p.liqUsd = liq
         }
         break
@@ -251,7 +268,9 @@ export class Registry {
       }
 
       case 'metadata': {
-        for (const p of this.byMint(e.mint)) {
+        const mkey = String(e.pool ?? '')
+        const mtargets = mkey && this.pools.has(mkey) ? [this.pools.get(mkey)!] : this.byMint(e.mint)
+        for (const p of mtargets) {
           if (!p.name && typeof e.name === 'string') p.name = e.name
           if (!p.symbol && typeof e.symbol === 'string') p.symbol = e.symbol
         }
