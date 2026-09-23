@@ -85,12 +85,29 @@ export class Registry {
   pools = new Map<string, PoolState>()
   mintIndex = new Map<string, Set<string>>()
 
+  /** quote-like mints never identify the token of interest (WSOL pairs etc.) */
+  static QUOTE_MINTS = new Set([
+    'So11111111111111111111111111111111111111112', // WSOL
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+    'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
+  ])
+
+  /** first non-quote mint candidate from an event; falls back to whatever exists */
+  private primaryMint(e: Record<string, unknown>): string {
+    const cands: string[] = []
+    for (const v of [e.mint, e.base_mint]) {
+      if (typeof v === 'string' && v) cands.push(v)
+    }
+    for (const c of cands) if (!Registry.QUOTE_MINTS.has(c)) return c
+    return cands[0] ?? ''
+  }
+
   private ensure(key: string, e: Record<string, unknown>, now: number): PoolState {
     let p = this.pools.get(key)
     if (!p) {
       p = {
         pool: key,
-        mint: String(e.mint ?? e.base_mint ?? ''),
+        mint: this.primaryMint(e),
         dex: String(e.dex ?? e.launchpad ?? ''),
         name: '',
         symbol: '',
@@ -108,9 +125,17 @@ export class Registry {
       }
       this.pools.set(key, p)
     }
-    if (!p.mint) {
-      const mint = String(e.mint ?? e.base_mint ?? '')
+    if (!p.mint || Registry.QUOTE_MINTS.has(p.mint)) {
+      const mint = this.primaryMint(e)
       if (mint) {
+        // a quote-mint mislabel can be replaced; move the index entry too
+        if (p.mint && p.mint !== mint) {
+          const old = this.mintIndex.get(p.mint)
+          if (old) {
+            old.delete(key)
+            if (old.size === 0) this.mintIndex.delete(p.mint)
+          }
+        }
         p.mint = mint
         this.indexMint(mint, key)
       }

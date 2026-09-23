@@ -26,7 +26,9 @@ export const config = {
   minLiquidityUsd: num(process.env.MIN_LIQUIDITY_USD, 2000),
   deepDiveThreshold: num(process.env.DEEP_DIVE_THRESHOLD, 60),
   alertThreshold: num(process.env.ALERT_THRESHOLD, 75),
-  logEvents: (process.env.LOG_EVENTS ?? '1') !== '0',
+  // default OFF for release: live logging wrote 3.5GB of jsonl in one day.
+  // Set LOG_EVENTS=1 to capture the raw event stream to data/events-*.jsonl
+  logEvents: (process.env.LOG_EVENTS ?? '0') !== '0',
 }
 
 export const SIGNUP_URL = 'https://solami.dev/signup?ref=st-earn-sep-26'

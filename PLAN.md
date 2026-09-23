@@ -87,16 +87,16 @@ TypeScript + tsx/Node · official Yellowstone client · static HTML/CSS/JS front
 12. **Nova template provenance (open-source hygiene)**: shell CSS/JS vendored from fbici.github.io/nova-admin-template-v3 into `public/nova/`. Before public push: check the template's license + attribute it in README (judges read repos; borrowed assets uncredited = build-quality ding). Landing assets (Trenox) same question.
 
 ### Known front-end bugs / debt (fix in the hard-test pass)
-- [ ] **WSOL mint mislabel**: `pool_create` with base=WSOL indexes mint=WSOL → token metadata fans out; a SOL/USDC pool renders label "SOL", and `token_update liqUsd` can fan out to wrong pools. Display-only, scores unaffected. Fix: prefer non-WSOL/USDC mint as primary in `ensure()`/`token_create`.
-- [ ] **Broken template images**: `/assets/*` srcsets 404 (og share image already repointed), flag SVGs still named `China.svg` etc. (render fine as DEX labels), `/_next/static` preloads 404.
-- [ ] **Dead `./pages/*.html` links** in landing nav dropdown + utility entries (pages/ never shipped) — retarget or delete.
-- [ ] **Hydration risk**: `./scripts/*.js` are local and may run → React may re-assert RSC payload strings over static DOM. Payload variants were edited too, but confirm visually in browser during hard test.
+- [x] **WSOL mint mislabel FIXED** (hard test): `Registry.QUOTE_MINTS` (WSOL/USDC/USDT) + `primaryMint()` — quote mints never identify the token; an existing mislabel self-heals on the next event (index entry moved too). Live-label confirmation owed in the eyeball pass.
+- [x] **Broken template images — root cause FIXED (hard test)**: every `/assets/images/*` ref (63 names, static + hydration payload) rewritten to `./images/*` — **all 63 verified present on disk**; favicon/webclip created from Logo.svg; `404-1.png → 404.png`; fonts/CSS retargeted to `./styles/*`; dead `_next` preload removed. Asset audit: **77 live refs, 0 dead** (`/app` = route false-positive). Remaining cosmetic: flag SVGs keep template names (China.svg etc.) — render fine as DEX labels.
+- [x] **Dead `./pages/*.html` links FIXED (hard test)**: entire "Sections" dropdown `<li>` (21 template links) surgically removed; 13 residual payload refs rewritten to `/`. Zero `./pages` refs remain.
+- [ ] **Hydration risk (narrowed)**: landing scripts run locally; asset paths + `./pages` links now consistent across static AND payload copies (regex rewrite hit both), so a re-render resolves valid refs. Visual check remains: no layout flash / template text reappearing after full load.
 - [ ] **`TrenoxScripts` JS identifier** left in place (invisible; renaming may break template scripts — touch only if needed).
 - [ ] **100% BUY column** on micro-pools = real data (first trades of a launch are buys), NOT a parser bug — full log split is 64/36. Confirm judges don't read it as broken.
 - [ ] **Demo never alerts at 75**: fixture peaks at score 66 → use `ALERT_THRESHOLD=60 npm run demo` for demo alert showcase.
 - [ ] **Discord webhook never tested** — no URL ever set; set `DISCORD_WEBHOOK_URL` + fire once. **Telegram: subscriber path proven (welcome received) but a LIVE alert push landing on the phone is still unconfirmed** — verify before Loom claims it.
 - [ ] **Call card PNG never eyeballed by a human** — data plumbing proven only. Click `⬇ Call card` on a live alert: check layout, fonts (Space Grotesk/JetBrains Mono in canvas), sparkline, clipboard copy (needs secure ctx — LAN-IP access falls back to download, by design).
-- [ ] **LOG_EVENTS disk bomb**: live default wrote 3.5 GB of jsonl in one day (`events-2026-09-23.jsonl`). Judges running `npm start` replicate this. Decide: default `LOG_EVENTS=0` for release, or document `LOG_EVENTS=0` prominently in README env table.
+- [x] **LOG_EVENTS disk bomb FIXED (hard test)**: default now OFF in `config.ts` (3.5GB/day stopped) — `LOG_EVENTS=1` opts back in, documented inline. Demo still captures events when needed.
 - [ ] **Demo-only: restored + fresh alerts can show the same label twice** (fixture keys are random per run; live keys are stable → impossible on mainnet). Cosmetic.
 - [ ] Landing page not yet eyeballed in a real browser (only curl-verified).
 
@@ -126,7 +126,7 @@ TypeScript + tsx/Node · official Yellowstone client · static HTML/CSS/JS front
 ### Remaining sprint order
 1. ~~Dashboard~~ **DONE** — Nova shell rebuilt as `/app` (single page, orange/black theme, bottom horizon gradient), commits `97bd6d5` `d0c301a` `e9c5d1a`
 2. ~~Price metric + Telegram E2E + call cards~~ **DONE** (`3598766` `9eb4557` `4d97a65`)
-3. **Front-end hard test pass (the debt list above) — NEXT**
+3. **Front-end hard test pass — IN PROGRESS**: WSOL ✅ · dead links ✅ · asset paths ✅ · LOG_EVENTS ✅ — remaining: **human eyeball pass** (checklist handed to user), hydration visual check, live-alert phone-push confirmation
 4. **README Day-3 pass + secrets sweep** — document self-serve Telegram, call cards, persistence, theme, `LOG_EVENTS` decision, Nova/Trenox attribution; then **Push public GitHub repo — the last hard requirement**. Screenshot the 10x row/sparkline for the submission form while at it.
 5. Broken images pass (landing)
 6. Loom: live slots ticking → pool event → score climbing → alert + latency stamp → phone gets Telegram push → call card paste → ⚡ Photon act click → kill connection → fromSlot replay closes gap
