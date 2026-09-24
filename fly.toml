@@ -27,8 +27,8 @@ primary_region = "iad"
     hard_limit = 250
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
+  size = "shared-cpu-2x"
+  memory = "1024mb"
 
 # Persistent pool/alert state across deploys and restarts
 [mounts]
