@@ -1,0 +1,10 @@
+node_modules
+data
+.env
+.git
+docs
+*.md
+mockup
+netlify.toml
+com.pulselock.engine.plist.disabled
+.DS_Store

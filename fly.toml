@@ -1,0 +1,36 @@
+# PulseLock engine — always-on web service on Fly.io
+# The whole app is one process: Blur WS + gRPC ingest, scoring, HTTP dashboard + SSE.
+
+app = "pulselock"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "4173"
+  LOG_EVENTS = "0"
+  MIN_LIQUIDITY_USD = "2000"
+  DEEP_DIVE_THRESHOLD = "60"
+  ALERT_THRESHOLD = "75"
+
+[http_service]
+  internal_port = 4173
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+# Persistent pool/alert state across deploys and restarts
+[mounts]
+  source = "pulselock_data"
+  destination = "/app/data"
