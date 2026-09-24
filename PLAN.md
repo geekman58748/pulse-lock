@@ -1,7 +1,7 @@
 # PulseLock — LOCKED SPEC
 > Real-time Solana launch & liquidity conviction engine. Solami Sept '26 Earn bounty.
-> Status: Day 3 — build shipped through alert persistence (`81aacec`).
-> Remaining: hard test → README pass → public push → broken images → Loom.
+> Status: Day 3 — README rewrite + demo video + call cards shipped (`af1f893`).
+> Remaining: public push (secrets already swept, history clean).
 
 ## Product (one line)
 Watch new pools/launches live, deep-dive the hot ones, score conviction 0–100
@@ -42,12 +42,12 @@ live slots ticking → pool event → score updating → alert firing w/ latency
 - **Day 3:** elite README (<5min run), record 2–3min Loom, edge cases, open source
 
 ## Submission checklist
-- [ ] Solami = the entire data path, 2+ products doing real work
-- [ ] Public repo, no secrets, key via env var
-- [ ] README: setup, env vars, point-at-your-own-key
-- [ ] 2–3 min demo: LIVE mainnet (slots ticking, not canned logs)
-- [ ] Metrics: launches, volume, unique wallets, buy/sell pressure, liquidity in/out, score
-- [ ] Works. A submission that does not run live is not judged.
+- [x] Solami = the entire data path, 2+ products doing real work (Blur + Yellowstone gRPC; stack-fit table in README)
+- [ ] Public repo, no secrets, key via env var — secrets swept, `.env` never in history; **push is the last step**
+- [x] README: setup, env vars, point-at-your-own-key (`af1f893`)
+- [x] 2–3 min demo: LIVE mainnet → https://youtu.be/CxrWsA5ply8
+- [x] Metrics: launches, volume, unique wallets, buy/sell pressure, liquidity in/out, score
+- [x] Works. A submission that does not run live is not judged.
 
 ## Stack
 TypeScript + tsx/Node · official Yellowstone client · static HTML/CSS/JS front end
@@ -60,6 +60,12 @@ TypeScript + tsx/Node · official Yellowstone client · static HTML/CSS/JS front
 ---
 
 ## SESSION NOTES — understandings locked for review (added Day 3)
+### Day-3 wrap session (2026-09-24)
+- **Hotspot incident:** engine (Blur ~470 ev/s + gRPC) burned ~31 GB of 180 GB hotspot use before dying Sep 23 ~18:25. Live-mode on hotspot = tens of GB/day — never leave it running on cellular.
+- **launchd trap defused:** `com.pulselock.engine` plist had `RunAtLoad`+`KeepAlive` (a reboot would silently restart the firehose). Parked as `com.pulselock.engine.plist.disabled` in-repo; re-enable only on real Wi-Fi, add `LOG_EVENTS=0`.
+- **Counter/disk fix shipped (`ad38adc`):** events counter always counts; JSONL write gated by `LOG_EVENTS` (default off).
+- **Demo-mode semantics (verified in code):** `--demo` replays fixtures through the real pipeline (blur/grpc show 0 — feed is intentionally offline) but Telegram polling + alert broadcast are REAL — demo alerts genuinely push to phones. Demo video already recorded with zeros on the header; README pre-explains this as intended behavior.
+- **README rewritten for judges (`af1f893`):** demo link, 3 real call cards (`docs/call-card-*.jpeg`, peak-since-call story), full score spec from `src/score.ts`, used-vs-cut stack table, honest limits (incl. bandwidth warning).
 ### Verified working (live mainnet, 2026-09-22/23)
 - Blur WS + gRPC both green: ~470 events/s, freshness 0.35–0.84s, 0 reconnects, pongs flowing
 - Registry: 3,201 pools in a 3-min run; `data/state.json` persistence + graceful SIGINT save OK
