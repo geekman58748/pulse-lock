@@ -21,11 +21,14 @@ class EventLog {
       mkdirSync('data', { recursive: true })
       const demo = process.argv.includes('--demo') || process.env.DEMO === '1'
       this.file = `data/events${demo ? '-DEMO' : ''}-${new Date().toISOString().slice(0, 10)}.jsonl`
-      this.stream = createWriteStream(this.file, { flags: 'a' })
-      this.stream.on('error', (e) => {
-        log.warn('event log error:', e.message)
-        this.stream = null
-      })
+      // file only when LOG_EVENTS=1 — the counter below always runs
+      if ((process.env.LOG_EVENTS ?? '0') !== '0') {
+        this.stream = createWriteStream(this.file, { flags: 'a' })
+        this.stream.on('error', (e) => {
+          log.warn('event log error:', e.message)
+          this.stream = null
+        })
+      }
     } catch (e) {
       log.warn('event log disabled:', e instanceof Error ? e.message : String(e))
     }

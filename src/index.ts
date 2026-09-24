@@ -39,7 +39,8 @@ async function main(): Promise<void> {
   let feed: DemoHandle | null = null
 
   const logEvent = (e: unknown): void => {
-    if (config.logEvents) events.write(e)
+    // always count ingest (console header); file write gated by LOG_EVENTS inside events.write
+    events.write(e)
   }
   const onEvent = (e: unknown): void => registry.ingest(e)
 
