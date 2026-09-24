@@ -88,6 +88,8 @@ npm run demo        # offline synthetic feed through the EXACT same pipeline,
 > Demo mode intentionally shows `blur 0 · grpc 0`: the market feed is a local replay,
 > so nothing dials out to Solami. Scoring, alerting, and the Telegram push are all
 > still real; the fixtures cross the same thresholds and fire the same alerts.
+> The demo video runs with `ALERT_THRESHOLD` lowered (50) so alerts fire on camera;
+> the production default is 75 (see the tuning tip in Config).
 
 ---
 
