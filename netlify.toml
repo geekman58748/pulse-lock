@@ -1,0 +1,17 @@
+# Netlify static deploy of the PulseLock front end (landing + terminal shell).
+# The live engine (Blur WS + gRPC) is a long-running process; it stays local.
+# The /app dashboard renders and shows its offline state until an engine feeds it.
+
+[build]
+  publish = "public"
+
+# Mirror src/server.ts routing: / and /app (plus the /terminal alias).
+[[redirects]]
+  from = "/app"
+  to = "/app.html"
+  status = 200
+
+[[redirects]]
+  from = "/terminal"
+  to = "/app.html"
+  status = 200
