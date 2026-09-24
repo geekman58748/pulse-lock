@@ -310,7 +310,7 @@ PLAN.md        full build plan, cut list, and decision log
 ## Roadmap
 
 - **v2, execution layer (Solami Beam).** The documented scope cut: this build stays
-  read-only and ships conviction → venue deep links. v2 closes the loop — one-tap
+  read-only and ships conviction → venue deep links. v2 closes the loop: one-tap
   swap straight from the call card, with the same visible math attached to the trade.
 - **Score backtesting via Data API.** Replay the conviction score against indexed
   history to tune weights with evidence instead of vibes.
